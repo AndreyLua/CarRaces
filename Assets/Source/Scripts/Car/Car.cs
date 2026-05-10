@@ -37,7 +37,7 @@ public class Car : MonoBehaviour, ITriggerable
         _body.velocity = Vector3.zero;
         _body.angularVelocity = Vector3.zero;
         _engine.StopMotor();
-        _transmission.ResetMe();
+        _transmission.Reset();
     }
 
     private void Update()

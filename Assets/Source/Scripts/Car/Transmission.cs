@@ -11,40 +11,36 @@ public class Transmission : MonoBehaviour
     [SerializeField] private float _maxEversionAngle = 30;
     [SerializeField] private float _weightWheel=1;
     [SerializeField] private float _brakeTorque = 100;
-    [SerializeField] private float _brakeTime = 0;
     [SerializeField] private Rigidbody _body;
 
     private TransmissionAngleState _state;
-    private float _eversionAngle =0;
-    private float _frontFriction;
-    private float _rearFriction;
-    private Vector3 _frontFrictionForce;
-    private Vector3 _rearFrictionForce;
+
+
+
     private bool _isBraking;
+
     private Dictionary<WheelsQuadPositionId, Wheel> _wheels;
-    private float _brakeTimer = 0;
-    private Vector3 _brakeSpeed;
+
     private float _wheelRotationTimer = 0;
+    private float _eversionAngle = 0;
     private float _eversionRealAngle = 0;
 
     private CarDirection _carDirection = CarDirection.Forward;
 
 
+
     public float Length => _length;
     public float Width => _width;
     public float EversionAngle => _eversionAngle;
-    public Vector3 FrontFrictionForce => _frontFrictionForce;
-    public Vector3 RearFrictionForce => _rearFrictionForce;
-   
+
     private void Awake()
     {
-        InitializingAxes();
-        _frontFriction = _wheels[WheelsQuadPositionId.FrontLeft].Friction + _wheels[WheelsQuadPositionId.FrontRight].Friction;
-        _rearFriction = _wheels[WheelsQuadPositionId.RearLeft].Friction + _wheels[WheelsQuadPositionId.RearRight].Friction;
+        InitAxes();
+
         _state = TransmissionAngleState.Forward;
     }
 
-    private void InitializingAxes()
+    private void InitAxes()
     {
         _wheels = new Dictionary<WheelsQuadPositionId, Wheel>();
         Vector3 widthWheelOffset = new Vector3(_width / 2, 0, 0);
@@ -72,16 +68,6 @@ public class Transmission : MonoBehaviour
 
     private void Update()
     {
-        if (_isBraking)
-        {
-            _body.velocity = Vector3.Lerp(_brakeSpeed, Vector3.zero, _brakeTimer / _brakeTime);
-            _brakeTimer += Time.deltaTime;
-        }
-        else
-        {
-            _brakeTimer = 0;
-        }
-
         if (_wheelRotationTimer<1)
         {
             _wheelRotationTimer += Time.deltaTime;
@@ -101,18 +87,15 @@ public class Transmission : MonoBehaviour
         {
             case TransmissionAngleState.Forward:
                 _eversionAngle = 0;
-                _frontFrictionForce = Vector3.zero;
-                _rearFrictionForce = Vector3.zero;  
+      
                 break;
             case TransmissionAngleState.TurnLeft:
                 _eversionAngle = -_maxEversionAngle;
-                _frontFrictionForce = -transform.right * _frontFriction * _weightWheel;
-                _rearFrictionForce = transform.right * _rearFriction * _weightWheel;
+              
                 break;
             case TransmissionAngleState.TurnRight:
                 _eversionAngle = _maxEversionAngle;
-                _frontFrictionForce = transform.right * _frontFriction * _weightWheel;
-                _rearFrictionForce = -transform.right * _rearFriction * _weightWheel;
+     
                 break;
         }
     }
@@ -140,7 +123,7 @@ public class Transmission : MonoBehaviour
 
     private void RotateFrontWheels()
     {
-        _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.steerAngle =_eversionRealAngle;
+        _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.steerAngle = _eversionRealAngle;
         _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.steerAngle = _eversionRealAngle;
     }
 
@@ -155,15 +138,9 @@ public class Transmission : MonoBehaviour
             visualization.Rotate(0, 0, 180);
     }
 
-    public void ResetMe()
+    public void Reset()
     {
-        _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque = 0;
-       _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = 0;
-        _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque = 0;
-        _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque = 0;
-
-        _frontFriction = _wheels[WheelsQuadPositionId.FrontLeft].Friction + _wheels[WheelsQuadPositionId.FrontRight].Friction;
-        _rearFriction = _wheels[WheelsQuadPositionId.RearLeft].Friction + _wheels[WheelsQuadPositionId.RearRight].Friction;
+        OffMoment();
         _state = TransmissionAngleState.Forward;
     }
 
@@ -171,49 +148,37 @@ public class Transmission : MonoBehaviour
     {
         if (_isBraking)
         {
-            _brakeSpeed = _body.velocity;
-            _brakeTimer += Time.deltaTime;
-            _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque = 0;
-            _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = 0;
-            _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque = 0;
-            _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque = 0;
-
-
-            _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.brakeTorque = 100000;
-            _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.brakeTorque = 100000;
-            _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.brakeTorque = 100000;
-            _wheels[WheelsQuadPositionId.RearRight].WheelCollider.brakeTorque = 100000;
-
+            foreach (var wheel in _wheels)
+            {
+                wheel.Value.WheelCollider.motorTorque = 0;
+                wheel.Value.WheelCollider.brakeTorque = 100000;
+            }
         }
         else
         {
-            _brakeTimer = 0;
             ResetBrakingState();
         }
     }
 
     public void OffMoment()
     {
-        _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque = 0;
-        _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = 0;
-        _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque = 0;
-        _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque = 0;
+        foreach (var wheel in _wheels)
+            wheel.Value.WheelCollider.motorTorque = 0;
     }
 
     public void ResetBrakingState()
     {
-        _brakeTimer = 0;
         _isBraking = false;
-        _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.brakeTorque = 0;
-        _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.brakeTorque = 0;
-        _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.brakeTorque = 0;
-        _wheels[WheelsQuadPositionId.RearRight].WheelCollider.brakeTorque = 0;
+        foreach (var wheel in _wheels)
+            wheel.Value.WheelCollider.brakeTorque = 0;
     }
 
     public void TransferPowerToWheels(float power)
     {
         _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque = power;
         _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = power;
+      //  _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque = power;
+       // _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque = power;
     }
 
     public void OnTransmissionAngleStateChange(TransmissionAngleState state, float procent, CarDirection carDirection)
