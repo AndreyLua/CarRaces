@@ -3,20 +3,11 @@ using UnityEngine;
 
 public class Transmission : MonoBehaviour
 {
-    [SerializeField] private Wheel _frontWheel;
-    [SerializeField] private Wheel _rearWheel;
-    [SerializeField] private float _width;
-    [SerializeField] private float _length;
-    [SerializeField] private float _suspensionWheelDistance = 0;
-    [SerializeField] private float _maxEversionAngle = 30;
-    [SerializeField] private float _weightWheel=1;
-    [SerializeField] private float _brakeTorque = 100;
     [SerializeField] private Rigidbody _body;
+    [SerializeField] private TransmissionConfig _transmissionConfig;
+    [SerializeField] private WheelbaseConfig _wheelbaseConfig;
 
     private TransmissionAngleState _state;
-
-
-
     private bool _isBraking;
 
     private Dictionary<WheelsQuadPositionId, Wheel> _wheels;
@@ -27,42 +18,35 @@ public class Transmission : MonoBehaviour
 
     private CarDirection _carDirection = CarDirection.Forward;
 
-
-
-    public float Length => _length;
-    public float Width => _width;
-    public float EversionAngle => _eversionAngle;
-
     private void Awake()
     {
         InitAxes();
-
         _state = TransmissionAngleState.Forward;
     }
 
     private void InitAxes()
     {
         _wheels = new Dictionary<WheelsQuadPositionId, Wheel>();
-        Vector3 widthWheelOffset = new Vector3(_width / 2, 0, 0);
-        Vector3 lengthWheelOffset = new Vector3(0, 0, _length / 2);
-        Vector3 transmissionUpOffset = new Vector3(0, _suspensionWheelDistance,0);  
+        Vector3 widthWheelOffset = new Vector3(_wheelbaseConfig.Width / 2, 0, 0);
+        Vector3 lengthWheelOffset = new Vector3(0, 0, _wheelbaseConfig.Length / 2);
+        Vector3 transmissionUpOffset = new Vector3(0, _transmissionConfig.SuspensionWheelDistance, 0);  
 
         Quaternion reverse = Quaternion.Euler(new Vector3(0, 0, 180));
 
-        _wheels[WheelsQuadPositionId.FrontLeft] = Instantiate<Wheel>(_frontWheel,
+        _wheels[WheelsQuadPositionId.FrontLeft] = Instantiate<Wheel>(_wheelbaseConfig.FrontWheel,
         gameObject.transform.position - widthWheelOffset + lengthWheelOffset + transmissionUpOffset, reverse);
-        _wheels[WheelsQuadPositionId.RearLeft] = Instantiate<Wheel>(_frontWheel,
+        _wheels[WheelsQuadPositionId.RearLeft] = Instantiate<Wheel>(_wheelbaseConfig.RearWheel,
         gameObject.transform.position - widthWheelOffset - lengthWheelOffset + transmissionUpOffset, reverse);
 
-        _wheels[WheelsQuadPositionId.FrontRight] = Instantiate<Wheel>(_frontWheel,
+        _wheels[WheelsQuadPositionId.FrontRight] = Instantiate<Wheel>(_wheelbaseConfig.FrontWheel,
         gameObject.transform.position + widthWheelOffset + lengthWheelOffset+ transmissionUpOffset, Quaternion.identity);
-        _wheels[WheelsQuadPositionId.RearRight] = Instantiate<Wheel>(_frontWheel,
+        _wheels[WheelsQuadPositionId.RearRight] = Instantiate<Wheel>(_wheelbaseConfig.RearWheel,
         gameObject.transform.position + widthWheelOffset - lengthWheelOffset+ transmissionUpOffset, Quaternion.identity);
 
         foreach (var wheel in _wheels)
         {
             wheel.Value.transform.parent = gameObject.transform;
-            wheel.Value.WheelCollider.suspensionDistance = _suspensionWheelDistance;
+            wheel.Value.WheelCollider.suspensionDistance = _transmissionConfig.SuspensionWheelDistance;
         }
     }
 
@@ -90,11 +74,11 @@ public class Transmission : MonoBehaviour
       
                 break;
             case TransmissionAngleState.TurnLeft:
-                _eversionAngle = -_maxEversionAngle;
+                _eversionAngle = -_transmissionConfig.MaxEversionAngle;
               
                 break;
             case TransmissionAngleState.TurnRight:
-                _eversionAngle = _maxEversionAngle;
+                _eversionAngle = _transmissionConfig.MaxEversionAngle;
      
                 break;
         }
@@ -103,7 +87,7 @@ public class Transmission : MonoBehaviour
     private void UpdateAng(float procent)
     {
  
-        float newAngle = _maxEversionAngle * procent;
+        float newAngle = _transmissionConfig.MaxEversionAngle * procent;
         switch (_state)
         {
             case TransmissionAngleState.Forward:
@@ -175,10 +159,21 @@ public class Transmission : MonoBehaviour
 
     public void TransferPowerToWheels(float power)
     {
-        _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque = power;
-        _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = power;
-      //  _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque = power;
-       // _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque = power;
+        switch (_transmissionConfig.AllWheelDrive)
+        {
+            case WheelDriveType.Front:
+                _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque = power;
+                _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = power;
+                break;
+            case WheelDriveType.Rear:
+                _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque = power;
+                _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque = power;
+                break;
+            case WheelDriveType.All:
+                foreach (var wheel in _wheels)
+                    wheel.Value.WheelCollider.motorTorque = power;
+                break;
+        }
     }
 
     public void OnTransmissionAngleStateChange(TransmissionAngleState state, float procent, CarDirection carDirection)

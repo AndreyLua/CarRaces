@@ -961,6 +961,14 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 3489983171113569543, guid: 43c2010ffdc9ae34fb7523012e788590, type: 3}
     - target: {fileID: 5705013386093927030, guid: 3d11d7eb4de22a843aa9fd146a62613d, type: 3}
+      propertyPath: _wheelbaseConfig
+      value: 
+      objectReference: {fileID: 11400000, guid: 7f33b4d00a4d1d743b1df2cc4d9d33a4, type: 2}
+    - target: {fileID: 5705013386093927030, guid: 3d11d7eb4de22a843aa9fd146a62613d, type: 3}
+      propertyPath: _transmissionConfig
+      value: 
+      objectReference: {fileID: 11400000, guid: 42363d4396166ce41a05401115a50197, type: 2}
+    - target: {fileID: 5705013386093927030, guid: 3d11d7eb4de22a843aa9fd146a62613d, type: 3}
       propertyPath: _suspensionWheelDistance
       value: 1
       objectReference: {fileID: 0}

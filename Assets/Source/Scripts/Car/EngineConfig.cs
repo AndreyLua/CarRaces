@@ -19,6 +19,17 @@ public class TransmissionConfig : ScriptableObject
     public WheelDriveType AllWheelDrive = WheelDriveType.Front;
 }
 
+[CreateAssetMenu(menuName = "CarConfig/WheelBaseConfig")]
+public class WheelbaseConfig : ScriptableObject
+{
+    public Wheel FrontWheel;
+    public Wheel RearWheel;
+    public float Width;
+    public float Length;
+}
+
+
+
 public enum WheelDriveType
 {
     Front,
