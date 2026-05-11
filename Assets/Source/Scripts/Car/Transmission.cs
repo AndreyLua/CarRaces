@@ -29,6 +29,7 @@ public class Transmission : MonoBehaviour
         _wheels = new Dictionary<WheelsQuadPositionId, Wheel>();
         Vector3 widthWheelOffset = new Vector3(_wheelbaseConfig.Width / 2, 0, 0);
         Vector3 lengthWheelOffset = new Vector3(0, 0, _wheelbaseConfig.Length / 2);
+
         Vector3 transmissionUpOffset = new Vector3(0, _transmissionConfig.SuspensionWheelDistance, 0);  
 
         Quaternion reverse = Quaternion.Euler(new Vector3(0, 0, 180));
@@ -159,6 +160,8 @@ public class Transmission : MonoBehaviour
 
     public void TransferPowerToWheels(float power)
     {
+
+        //Debug.Log(power);
         switch (_transmissionConfig.AllWheelDrive)
         {
             case WheelDriveType.Front:

@@ -11,8 +11,6 @@ public class Car : MonoBehaviour, ITriggerable
     [SerializeField] private UserInputCarControl _userInputCarControl;
 
     private Rigidbody _body;
-    private float _pastAngularSpeed;
-    private float _angularAcceleration;
     private CarDirection _carDirection;
     public event Action<ITriggerable> OnTriggerRemoveForced;
 
@@ -22,14 +20,14 @@ public class Car : MonoBehaviour, ITriggerable
 
     private void Awake()
     {
-        _engine = new Engine(_engineConfig);
+        _engine = new Engine(_engineConfig, 5);
     }
 
     private void Start()
     {
         _camera = Camera.main;
         _body = gameObject.GetComponent<Rigidbody>();
-        _body.centerOfMass += new Vector3(0, -0.4f, 0);
+        _body.centerOfMass += new Vector3(0, -0.6f, 0);
     }
 
     public void ResetMe()
@@ -42,8 +40,7 @@ public class Car : MonoBehaviour, ITriggerable
 
     private void Update()
     {
-        _engine.Update();
-        Move();    
+        Move();
     }
 
     private void EnginePull(bool kek)
@@ -119,10 +116,7 @@ public class Car : MonoBehaviour, ITriggerable
         float procent = Math.Abs(input.x);
 
          _transmission.OnTransmissionAngleStateChange(transmissionAngleState, procent, _carDirection);
+        Debug.Log(_engine.Force);
 
-
-        _angularAcceleration  = _pastAngularSpeed - _body.angularVelocity.y;
-        _transmission.TransferPowerToWheels(_engine.Force* (int)_carDirection);
-        _pastAngularSpeed = _body.angularVelocity.y;
-    }
+        _transmission.TransferPowerToWheels(_engine.Force* (int)_carDirection);    }
 }

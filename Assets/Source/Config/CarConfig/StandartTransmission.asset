@@ -16,4 +16,4 @@ MonoBehaviour:
   MaxEversionAngle: 30
   WeightWheel: 1
   BrakeTorque: 1000
-  AllWheelDrive: 0
+  AllWheelDrive: 2
