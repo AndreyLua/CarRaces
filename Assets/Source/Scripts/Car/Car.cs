@@ -45,11 +45,6 @@ public class Car : MonoBehaviour, ITriggerable
         Move();
     }
 
-    private void EnginePull(bool kek)
-    {
-        _engine.OnMotorPullingChange(kek);
-    }
-
     private void Move()
     {
         Vector2 input = FrameworkStorage.GlobalData.UserInput.JoystickOffcet;
@@ -71,11 +66,11 @@ public class Car : MonoBehaviour, ITriggerable
 
         if (input.y != 0)
         {
-            EnginePull(true);
+            _engine.OnMotorPullingChange(true);
         }
         else
         {
-            EnginePull(false);
+            _engine.OnMotorPullingChange(false);
             _body.velocity *= 1-0.5f*Time.deltaTime;
             _transmission.OffMoment();
         }
@@ -86,11 +81,6 @@ public class Car : MonoBehaviour, ITriggerable
             {
                 _carDirection = CarDirection.Forward;
             }
-            else
-            {
-            //    _transmission.OnBrakingActiveChange(true);
-      
-            }
         }
 
         if (input.y < 0)
@@ -98,11 +88,6 @@ public class Car : MonoBehaviour, ITriggerable
             if (isForward == null || isForward == false)
             {
                 _carDirection = CarDirection.Back;
-            }
-            else
-            {
-           //     _transmission.OnBrakingActiveChange(true);
-               
             }
         }
 
@@ -121,9 +106,15 @@ public class Car : MonoBehaviour, ITriggerable
 
         _transmission.OnTransmissionAngleStateChange(transmissionAngleState, procent, _carDirection);
 
-        _transmission.TransferPowerToWheels(_engine.Force* (int)_carDirection);    
+        _transmission.TransferPowerToWheels(_engine.Force* (int)_carDirection);
 
         _transmission.OnBrakingActiveChange(FrameworkStorage.GlobalData.UserInput.IsBraking);
+        _brakeLights.TurnLight(FrameworkStorage.GlobalData.UserInput.IsBraking);
+        if (FrameworkStorage.GlobalData.UserInput.IsBraking)
+        {
+            _transmission.OffMoment();
+        }
+
 
     }
 }

@@ -23,8 +23,10 @@ public class UserInputCarControl : MonoBehaviour
         if (!_isActive.activeSelf)
         {
             if (FrameworkStorage.Inited)
+            {
                 FrameworkStorage.GlobalData.UserInput.JoystickOffcet = input;
-       
+                FrameworkStorage.GlobalData.UserInput.IsBraking = Input.GetKey(KeyCode.Space);
+            }
         }
     }
 }

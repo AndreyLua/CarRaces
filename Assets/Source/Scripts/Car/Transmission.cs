@@ -136,7 +136,7 @@ public class Transmission : MonoBehaviour
             foreach (var wheel in _wheels)
             {
                 wheel.Value.WheelCollider.motorTorque = 0;
-                wheel.Value.WheelCollider.brakeTorque = 100000;
+                wheel.Value.WheelCollider.brakeTorque = _transmissionConfig.BrakeTorque;
             }
         }
         else
@@ -147,8 +147,10 @@ public class Transmission : MonoBehaviour
 
     public void OffMoment()
     {
-        foreach (var wheel in _wheels)
+        foreach (var wheel in _wheels) {
             wheel.Value.WheelCollider.motorTorque = 0;
+            wheel.Value.WheelCollider.rotationSpeed *= 0.6f;
+                }
     }
 
     public void ResetBrakingState()
@@ -160,8 +162,6 @@ public class Transmission : MonoBehaviour
 
     public void TransferPowerToWheels(float power)
     {
-
-        //Debug.Log(power);
         switch (_transmissionConfig.AllWheelDrive)
         {
             case WheelDriveType.Front:

@@ -10,6 +10,12 @@ public class BrakeLights : MonoBehaviour
         TurnOff();
     }
 
+    public void TurnLight(bool isTurnOn)
+    {
+        foreach (Light light in _lights)
+            light.intensity = isTurnOn? 1:0;
+    }
+
     public void TurnOn()
     {
         foreach (Light light in _lights)
