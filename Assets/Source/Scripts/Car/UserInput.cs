@@ -3,10 +3,10 @@ using UnityEngine;
 
 public class UserInput
 {
-    public bool InputLocked { get; private set; }
-
     private Vector2 joystickOffcet;
 
+    public bool IsBraking;
+    public bool InputLocked { get; private set; }
     public Vector2 JoystickOffcet
     {
         get => joystickOffcet;

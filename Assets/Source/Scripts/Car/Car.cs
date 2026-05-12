@@ -6,6 +6,8 @@ public class Car : MonoBehaviour, ITriggerable
     private Camera _camera;
     private Engine _engine;
 
+
+    [SerializeField] private BrakeLights _brakeLights;
     [SerializeField] private EngineConfig _engineConfig;
     [SerializeField] private Transmission _transmission;
     [SerializeField] private UserInputCarControl _userInputCarControl;
@@ -86,7 +88,8 @@ public class Car : MonoBehaviour, ITriggerable
             }
             else
             {
-                _transmission.OnBrakingActiveChange(true);
+            //    _transmission.OnBrakingActiveChange(true);
+      
             }
         }
 
@@ -98,7 +101,8 @@ public class Car : MonoBehaviour, ITriggerable
             }
             else
             {
-                _transmission.OnBrakingActiveChange(true);
+           //     _transmission.OnBrakingActiveChange(true);
+               
             }
         }
 
@@ -115,8 +119,11 @@ public class Car : MonoBehaviour, ITriggerable
 
         float procent = Math.Abs(input.x);
 
-         _transmission.OnTransmissionAngleStateChange(transmissionAngleState, procent, _carDirection);
-        Debug.Log(_engine.Force);
+        _transmission.OnTransmissionAngleStateChange(transmissionAngleState, procent, _carDirection);
 
-        _transmission.TransferPowerToWheels(_engine.Force* (int)_carDirection);    }
+        _transmission.TransferPowerToWheels(_engine.Force* (int)_carDirection);    
+
+        _transmission.OnBrakingActiveChange(FrameworkStorage.GlobalData.UserInput.IsBraking);
+
+    }
 }
