@@ -37,7 +37,7 @@ public class Car : MonoBehaviour, ITriggerable
         _body.velocity = Vector3.zero;
         _body.angularVelocity = Vector3.zero;
         _engine.StopMotor();
-        _transmission.Reset();
+        _transmission.Restart();
     }
 
     private void Update()
@@ -67,11 +67,11 @@ public class Car : MonoBehaviour, ITriggerable
         if (input.y != 0)
         {
             _engine.OnMotorPullingChange(true);
+            _transmission.TransferPowerToWheels(_engine.Force * (int)_carDirection);
         }
         else
         {
             _engine.OnMotorPullingChange(false);
-            _body.velocity *= 1-0.5f*Time.deltaTime;
             _transmission.OffMoment();
         }
 
@@ -106,7 +106,7 @@ public class Car : MonoBehaviour, ITriggerable
 
         _transmission.OnTransmissionAngleStateChange(transmissionAngleState, procent, _carDirection);
 
-        _transmission.TransferPowerToWheels(_engine.Force* (int)_carDirection);
+
 
         _transmission.OnBrakingActiveChange(FrameworkStorage.GlobalData.UserInput.IsBraking);
         _brakeLights.TurnLight(FrameworkStorage.GlobalData.UserInput.IsBraking);

@@ -123,7 +123,7 @@ public class Transmission : MonoBehaviour
             visualization.Rotate(0, 0, 180);
     }
 
-    public void Reset()
+    public void Restart()
     {
         OffMoment();
         _state = TransmissionAngleState.Forward;
@@ -147,10 +147,11 @@ public class Transmission : MonoBehaviour
 
     public void OffMoment()
     {
+        Debug.Log("gggg");
         foreach (var wheel in _wheels) {
             wheel.Value.WheelCollider.motorTorque = 0;
-            wheel.Value.WheelCollider.rotationSpeed *= 0.6f;
-                }
+            wheel.Value.WheelCollider.brakeTorque = 100;
+        }
     }
 
     public void ResetBrakingState()
@@ -162,19 +163,26 @@ public class Transmission : MonoBehaviour
 
     public void TransferPowerToWheels(float power)
     {
+        ResetBrakingState();
+        float maxSpeed = 30;
+
+        float targetTorque = Mathf.Lerp(power * maxSpeed.Normalize(), 0f, _body.velocity.magnitude / maxSpeed);
+
+        Debug.Log(targetTorque);
+        
         switch (_transmissionConfig.AllWheelDrive)
         {
             case WheelDriveType.Front:
-                _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque = power;
-                _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = power;
+                _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque = _wheels[WheelsQuadPositionId.FrontLeft].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 3f);
+                _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 3f);
                 break;
             case WheelDriveType.Rear:
-                _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque = power;
-                _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque = power;
+                _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 1f);
+                _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 1f);
                 break;
             case WheelDriveType.All:
                 foreach (var wheel in _wheels)
-                    wheel.Value.WheelCollider.motorTorque = power;
+                    wheel.Value.WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 3f);
                 break;
         }
     }
