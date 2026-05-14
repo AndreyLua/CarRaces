@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: StandartTransmission
   m_EditorClassIdentifier: Assembly-CSharp::TransmissionConfig
-  SuspensionWheelDistance: 1
-  MaxEversionAngle: 30
-  WeightWheel: 1
-  BrakeTorque: 1000
-  AllWheelDrive: 2
+  SuspensionWheelDistance: 0.2
+  MaxEversionAngle: 10
+  WeightWheel: 20
+  BrakeTorque: 700
+  AllWheelDrive: 0

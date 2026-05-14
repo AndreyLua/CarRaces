@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: JeepWheelBase
   m_EditorClassIdentifier: Assembly-CSharp::WheelbaseConfig
-  FrontWheel: {fileID: 3489983171113569543, guid: 43c2010ffdc9ae34fb7523012e788590, type: 3}
-  RearWheel: {fileID: 3489983171113569543, guid: 43c2010ffdc9ae34fb7523012e788590, type: 3}
+  FrontWheel: {fileID: 3489983171113569543, guid: 2b2bc87b9ca03fd4ca660db876f037a3, type: 3}
+  RearWheel: {fileID: 3489983171113569543, guid: 2b2bc87b9ca03fd4ca660db876f037a3, type: 3}
   Width: 1.3
   Length: 2.9

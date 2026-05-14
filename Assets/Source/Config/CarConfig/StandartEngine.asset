@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 692b4c403ede3174e9c375dcceb9c492, type: 3}
   m_Name: StandartEngine
   m_EditorClassIdentifier: 
-  StartForce: 2000
-  ForceAcceleration: 5
+  StartForce: 3000
+  ForceAcceleration: 0.2

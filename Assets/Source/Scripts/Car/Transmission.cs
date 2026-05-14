@@ -18,6 +18,8 @@ public class Transmission : MonoBehaviour
 
     private CarDirection _carDirection = CarDirection.Forward;
 
+    public float MaxEversionAngle => _transmissionConfig.MaxEversionAngle;
+
     private void Awake()
     {
         InitAxes();
@@ -30,19 +32,33 @@ public class Transmission : MonoBehaviour
         Vector3 widthWheelOffset = new Vector3(_wheelbaseConfig.Width / 2, 0, 0);
         Vector3 lengthWheelOffset = new Vector3(0, 0, _wheelbaseConfig.Length / 2);
 
-        Vector3 transmissionUpOffset = new Vector3(0, _transmissionConfig.SuspensionWheelDistance, 0);  
+        Vector3 transmissionUpOffset = new Vector3(0, _transmissionConfig.SuspensionWheelDistance, 0);
 
         Quaternion reverse = Quaternion.Euler(new Vector3(0, 0, 180));
 
-        _wheels[WheelsQuadPositionId.FrontLeft] = Instantiate<Wheel>(_wheelbaseConfig.FrontWheel,
-        gameObject.transform.position - widthWheelOffset + lengthWheelOffset + transmissionUpOffset, reverse);
-        _wheels[WheelsQuadPositionId.RearLeft] = Instantiate<Wheel>(_wheelbaseConfig.RearWheel,
-        gameObject.transform.position - widthWheelOffset - lengthWheelOffset + transmissionUpOffset, reverse);
+        _wheels[WheelsQuadPositionId.FrontLeft] = Instantiate<Wheel>(
+            _wheelbaseConfig.FrontWheel,
+            transform.TransformPoint(-widthWheelOffset + lengthWheelOffset + transmissionUpOffset),
+            reverse
+        );
 
-        _wheels[WheelsQuadPositionId.FrontRight] = Instantiate<Wheel>(_wheelbaseConfig.FrontWheel,
-        gameObject.transform.position + widthWheelOffset + lengthWheelOffset+ transmissionUpOffset, Quaternion.identity);
-        _wheels[WheelsQuadPositionId.RearRight] = Instantiate<Wheel>(_wheelbaseConfig.RearWheel,
-        gameObject.transform.position + widthWheelOffset - lengthWheelOffset+ transmissionUpOffset, Quaternion.identity);
+        _wheels[WheelsQuadPositionId.RearLeft] = Instantiate<Wheel>(
+            _wheelbaseConfig.RearWheel,
+            transform.TransformPoint(-widthWheelOffset - lengthWheelOffset + transmissionUpOffset),
+            reverse
+        );
+
+        _wheels[WheelsQuadPositionId.FrontRight] = Instantiate<Wheel>(
+            _wheelbaseConfig.FrontWheel,
+            transform.TransformPoint(widthWheelOffset + lengthWheelOffset + transmissionUpOffset),
+            Quaternion.identity
+        );
+
+        _wheels[WheelsQuadPositionId.RearRight] = Instantiate<Wheel>(
+            _wheelbaseConfig.RearWheel,
+            transform.TransformPoint(widthWheelOffset - lengthWheelOffset + transmissionUpOffset),
+            Quaternion.identity
+        );
 
         foreach (var wheel in _wheels)
         {
@@ -147,7 +163,6 @@ public class Transmission : MonoBehaviour
 
     public void OffMoment()
     {
-        Debug.Log("gggg");
         foreach (var wheel in _wheels) {
             wheel.Value.WheelCollider.motorTorque = 0;
             wheel.Value.WheelCollider.brakeTorque = 100;
@@ -169,7 +184,7 @@ public class Transmission : MonoBehaviour
         float targetTorque = Mathf.Lerp(power * maxSpeed.Normalize(), 0f, _body.velocity.magnitude / maxSpeed);
 
         Debug.Log(targetTorque);
-        
+
         switch (_transmissionConfig.AllWheelDrive)
         {
             case WheelDriveType.Front:
@@ -177,12 +192,12 @@ public class Transmission : MonoBehaviour
                 _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque = _wheels[WheelsQuadPositionId.FrontRight].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 3f);
                 break;
             case WheelDriveType.Rear:
-                _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 1f);
-                _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 1f);
+                _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque = _wheels[WheelsQuadPositionId.RearLeft].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 3f);
+                _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque = _wheels[WheelsQuadPositionId.RearRight].WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 3f);
                 break;
             case WheelDriveType.All:
                 foreach (var wheel in _wheels)
-                    wheel.Value.WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 3f);
+                    wheel.Value.WheelCollider.motorTorque = wheel.Value.WheelCollider.motorTorque.LerpByStep(targetTorque, targetTorque.Abs() * Time.deltaTime * 3f);
                 break;
         }
     }

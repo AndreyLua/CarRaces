@@ -9,7 +9,7 @@ public class Car : MonoBehaviour, ITriggerable
 
     [SerializeField] private BrakeLights _brakeLights;
     [SerializeField] private EngineConfig _engineConfig;
-    [SerializeField] private Transmission _transmission;
+    private Transmission _transmission;
     [SerializeField] private UserInputCarControl _userInputCarControl;
 
     private Rigidbody _body;
@@ -23,6 +23,7 @@ public class Car : MonoBehaviour, ITriggerable
     private void Awake()
     {
         _engine = new Engine(_engineConfig, 5);
+        _transmission = gameObject.GetComponentInChildren<Transmission>();
     }
 
     private void Start()

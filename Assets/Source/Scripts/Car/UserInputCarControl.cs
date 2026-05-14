@@ -3,8 +3,6 @@ using UnityEngine;
 
 public class UserInputCarControl : MonoBehaviour
 {
-    [SerializeField] private GameObject _isActive;
-
     private void Update()
     {
                Vector2 input = Vector2.zero;
@@ -20,13 +18,14 @@ public class UserInputCarControl : MonoBehaviour
             if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
                 input += Vector2.right;
 
-        if (!_isActive.activeSelf)
-        {
+     
             if (FrameworkStorage.Inited)
             {
                 FrameworkStorage.GlobalData.UserInput.JoystickOffcet = input;
-                FrameworkStorage.GlobalData.UserInput.IsBraking = Input.GetKey(KeyCode.Space);
             }
-        }
+    
+            FrameworkStorage.GlobalData.UserInput.IsBraking = Input.GetKey(KeyCode.Space);
+       
+
     }
 }
