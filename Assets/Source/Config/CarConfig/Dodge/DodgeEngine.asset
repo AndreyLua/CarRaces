@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: DodgeEngine
   m_EditorClassIdentifier: 
   StartForce: 4500
-  ForceAcceleration: 0.5
+  ForceAcceleration: 0.2

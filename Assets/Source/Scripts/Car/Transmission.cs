@@ -145,14 +145,14 @@ public class Transmission : MonoBehaviour
         _state = TransmissionAngleState.Forward;
     }
 
-    private void Braking()
+    private void Braking(float procent)
     {
         if (_isBraking)
         {
             foreach (var wheel in _wheels)
             {
                 wheel.Value.WheelCollider.motorTorque = 0;
-                wheel.Value.WheelCollider.brakeTorque = _transmissionConfig.BrakeTorque;
+                wheel.Value.WheelCollider.brakeTorque = _transmissionConfig.BrakeTorque * procent;
             }
         }
         else
@@ -179,7 +179,7 @@ public class Transmission : MonoBehaviour
     public void TransferPowerToWheels(float power)
     {
         ResetBrakingState();
-        float maxSpeed = 30;
+        float maxSpeed = 50;
 
         float targetTorque = Mathf.Lerp(power * maxSpeed.Normalize(), 0f, _body.velocity.magnitude / maxSpeed);
 
@@ -213,12 +213,12 @@ public class Transmission : MonoBehaviour
         UpdateAng(procent);
     }
 
-    public void OnBrakingActiveChange(bool isBraking)
+    public void OnBrakingActiveChange(bool isBraking, float procent)
     {
         if (_isBraking != isBraking)
         {
             _isBraking = isBraking;
-            Braking();
+            Braking(procent);
         }
     }
 }

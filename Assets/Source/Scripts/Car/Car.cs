@@ -14,6 +14,7 @@ public class Car : MonoBehaviour, ITriggerable
 
     private Rigidbody _body;
     private CarDirection _carDirection;
+    private SpeedUIScreen _speedUI;
     public event Action<ITriggerable> OnTriggerRemoveForced;
 
     public Rigidbody Body => _body;
@@ -24,6 +25,7 @@ public class Car : MonoBehaviour, ITriggerable
     {
         _engine = new Engine(_engineConfig, 5);
         _transmission = gameObject.GetComponentInChildren<Transmission>();
+        _speedUI = UIScreenRepository.GetScreen<SpeedUIScreen>();
     }
 
     private void Start()
@@ -44,6 +46,8 @@ public class Car : MonoBehaviour, ITriggerable
     private void Update()
     {
         Move();
+        _speedUI.SetSpeed((_body.velocity.magnitude*5).ToInt());
+        _speedUI.SetGear(_engine.CurrentGear);
     }
 
     private void Move()
@@ -103,19 +107,17 @@ public class Car : MonoBehaviour, ITriggerable
             transmissionAngleState = TransmissionAngleState.Forward;
         }
 
-        float procent = Math.Abs(input.x);
+        float speedFactor = Mathf.Clamp01(_body.velocity.magnitude / 40f);
+
+        float procent = Mathf.Lerp(Math.Abs(input.x), 0, speedFactor);
 
         _transmission.OnTransmissionAngleStateChange(transmissionAngleState, procent, _carDirection);
 
-
-
-        _transmission.OnBrakingActiveChange(FrameworkStorage.GlobalData.UserInput.IsBraking);
+        _transmission.OnBrakingActiveChange(FrameworkStorage.GlobalData.UserInput.IsBraking, 1);
         _brakeLights.TurnLight(FrameworkStorage.GlobalData.UserInput.IsBraking);
         if (FrameworkStorage.GlobalData.UserInput.IsBraking)
         {
             _transmission.OffMoment();
         }
-
-
     }
 }

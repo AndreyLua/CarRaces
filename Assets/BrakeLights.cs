@@ -2,7 +2,8 @@ using UnityEngine;
 
 public class BrakeLights : MonoBehaviour
 {
-    [SerializeField] private Light[] _lights;
+    [SerializeField] private float _intensity = 0.4f;
+    private Light[] _lights;
 
     private void Awake()
     {
@@ -13,13 +14,13 @@ public class BrakeLights : MonoBehaviour
     public void TurnLight(bool isTurnOn)
     {
         foreach (Light light in _lights)
-            light.intensity = isTurnOn? 1:0;
+            light.intensity = isTurnOn? _intensity : 0;
     }
 
     public void TurnOn()
     {
         foreach (Light light in _lights)
-            light.intensity = 1;
+            light.intensity = _intensity;
     }
 
     public void TurnOff()
