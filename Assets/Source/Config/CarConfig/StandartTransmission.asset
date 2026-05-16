@@ -15,5 +15,5 @@ MonoBehaviour:
   SuspensionWheelDistance: 0.06
   MaxEversionAngle: 30
   WeightWheel: 20
-  BrakeTorque: 100
+  BrakeTorque: 500
   AllWheelDrive: 0
