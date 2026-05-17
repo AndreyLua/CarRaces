@@ -18,9 +18,8 @@ public class JoystickOffcetTransmitter : MonoBehaviour
         _screen = UIScreenRepository.GetScreen<JoystickUIScreen>();
         _stickPivot = _screen.Stick.position;
 
- //
         OnJoystickDisable(null);
-   //
+   
         _screen.Area.OnPointerDownEvent += OnJoystickEnable;
         _screen.Area.OnDraggingEvent += Dragging;
         _screen.Area.OnPointerUpEvent += OnJoystickDisable;

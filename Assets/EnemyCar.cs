@@ -13,6 +13,7 @@ public class EnemyCar : MonoBehaviour
     private int _targetPointIndex;
     private Engine _engine;
     private BrakeLights _brakeLights;
+    private bool _shouldBrake;
 
     private void Awake()
     {
@@ -93,12 +94,12 @@ public class EnemyCar : MonoBehaviour
         float currentSpeed = _body.velocity.magnitude;
 
 
-        bool shouldBrake = Mathf.Abs(angleToTarget) > 30f && currentSpeed > 6f;
+        _shouldBrake = _shouldBrake ? (Mathf.Abs(angleToTarget) > 20f && currentSpeed > 1f) : (Mathf.Abs(angleToTarget) > 20f && currentSpeed > 6f);
 
-        _brakeLights.TurnLight(shouldBrake);
-        if (shouldBrake)
+        _brakeLights.TurnLight(_shouldBrake);
+        if (_shouldBrake)
         {
-            _transmission.OnBrakingActiveChange(shouldBrake, Mathf.Clamp01(currentSpeed / 13f));
+            _transmission.OnBrakingActiveChange(_shouldBrake, Mathf.Clamp01(currentSpeed / 13f));
             _transmission.OffMoment();
         }
 
@@ -121,7 +122,7 @@ public class EnemyCar : MonoBehaviour
 
         steeringAmount *= (1 - speedFactor);
 
-        if (!shouldBrake)
+        if (!_shouldBrake)
         {
             _engine.OnMotorPullingChange(true);
             _transmission.TransferPowerToWheels(_engine.Force);
