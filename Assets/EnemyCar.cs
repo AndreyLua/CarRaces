@@ -15,6 +15,8 @@ public class EnemyCar : MonoBehaviour
     private BrakeLights _brakeLights;
     private bool _shouldBrake;
 
+    private EngineMoveCoreBase _engineMoveCore;
+
     private void Awake()
     {
         _points = new List<Vector3>();
@@ -31,6 +33,8 @@ public class EnemyCar : MonoBehaviour
         _body.centerOfMass += new Vector3(0, -0.8f, 0);
 
         _targetPointIndex = FindClosestPointAhead(transform.position, transform.forward);
+
+        _engineMoveCore = new EngineWayPointtMoveCore();
 
     }
 
@@ -83,12 +87,19 @@ public class EnemyCar : MonoBehaviour
         TransmissionAngleState transmissionAngleState = TransmissionAngleState.Forward;
 
 
+      
 
-        Vector3 directionToClosestPoint = (closestPoint - transform.position).normalized;
+        //
 
 
-        float angleToTarget = Vector3.SignedAngle(transform.forward, directionToClosestPoint, Vector3.up);
+        float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, closestPoint);
 
+
+       // float radius = Mathf.Abs(1f / curvature);
+     
+      //  DrawArc(radius, curvature < 0);
+
+        //
 
 
         float currentSpeed = _body.velocity.magnitude;
@@ -120,7 +131,9 @@ public class EnemyCar : MonoBehaviour
 
         float steeringAmount = Mathf.Clamp01(Mathf.Abs(angleToTarget) / _transmission.MaxEversionAngle);
 
+
         steeringAmount *= (1 - speedFactor);
+
 
         if (!_shouldBrake)
         {
@@ -134,4 +147,77 @@ public class EnemyCar : MonoBehaviour
 
         _transmission.OnTransmissionAngleStateChange(transmissionAngleState, steeringAmount, CarDirection.Forward);
     }
+
+    void DrawArc(float radius, bool leftTurn)
+    {
+        Gizmos.color = Color.red;
+
+        Vector3 center =
+            transform.position +
+            transform.right * (leftTurn ? -radius : radius);
+
+        float startAngle =
+            Mathf.Atan2(
+                transform.position.z - center.z,
+                transform.position.x - center.x
+            );
+
+        Vector3 previous = transform.position;
+
+        for (int i = 1; i <= 20; i++)
+        {
+            float angleStep = Mathf.PI / 60;
+
+            float angle =
+                startAngle +
+                (leftTurn ? angleStep * i : -angleStep * i);
+
+            Vector3 next = new Vector3(
+                center.x + Mathf.Cos(angle) * radius,
+                transform.position.y,
+                center.z + Mathf.Sin(angle) * radius
+            );
+
+         //  Debug.Log("ffff "+ next);
+            Debug.DrawLine(previous, next);
+
+            previous = next;
+        }
+    }
 }
+
+
+public abstract class EngineMoveCoreBase
+{
+    public abstract float GetAngleToTurn(Transform carTransform, Vector3 targetPosition);
+}
+
+public class EnginePurePursuitMoveCore: EngineMoveCoreBase
+{
+    private const float _curvatureK = 15;
+
+    public override float GetAngleToTurn(Transform carTransform, Vector3 targetPosition)
+    {
+        Vector3 localTarget = carTransform.InverseTransformPoint(targetPosition);
+        float L = localTarget.magnitude;
+        float curvature = (_curvatureK * localTarget.x) / (L * L);
+
+        float steering = curvature * Mathf.Rad2Deg;
+
+        float angleToTarget = steering;
+        float radius = Mathf.Abs(1f / curvature);
+
+        return angleToTarget;   
+    }
+}
+
+public class EngineWayPointtMoveCore : EngineMoveCoreBase
+{
+    public override float GetAngleToTurn(Transform carTransform, Vector3 targetPosition)
+    {
+        Vector3 directionToClosestPoint = (targetPosition - carTransform.position).normalized;
+
+        return Vector3.SignedAngle(carTransform.forward, directionToClosestPoint, Vector3.up);
+    }
+}
+

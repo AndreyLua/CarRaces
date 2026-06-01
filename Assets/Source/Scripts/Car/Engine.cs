@@ -26,7 +26,7 @@ public class Engine
     {
         float gearMultiplier = 1f + (_currentGear - 1) * _forceAcceleration;
         _force = _startForce * gearMultiplier;
-        Debug.Log(_force);
+     //   Debug.Log(_force);
         if (Time.time % 3 < Time.deltaTime) 
         {
             ShiftUp();

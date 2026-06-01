@@ -183,7 +183,7 @@ public class Transmission : MonoBehaviour
 
         float targetTorque = Mathf.Lerp(power * maxSpeed.Normalize(), 0f, _body.velocity.magnitude / maxSpeed);
 
-        Debug.Log(targetTorque);
+       // Debug.Log(targetTorque);
 
         switch (_transmissionConfig.AllWheelDrive)
         {

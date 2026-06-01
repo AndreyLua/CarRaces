@@ -1,18 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class TargetArrowUIScreen : MonoBehaviour
+public class TargetArrowUIScreen : UIScreen
 {
-    // Start is called before the first frame update
-    void Start()
+    [SerializeField] private Image _arrow;
+    private float _targetAngle = 0;
+
+
+    public void SetTargetAngle(float targetAngle)
     {
-        
+        _targetAngle = targetAngle;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        
+        Quaternion targetRotation = Quaternion.Euler(0, 0, _targetAngle);
+        _arrow.transform.rotation = targetRotation;
     }
 }
