@@ -8,5 +8,6 @@ public class FrameworkBootloader : MonoBehaviour
         new FrameworkStorage();
 
         FrameworkStorage.GlobalData.MeshGen = FindAnyObjectByType<ERMeshGen>();
+        FrameworkStorage.GlobalData.LineFactory = FindAnyObjectByType<LineFactory>();
     }
 }

@@ -17,6 +17,8 @@ public class EnemyCar : MonoBehaviour
 
     private EngineMoveCoreBase _engineMoveCore;
 
+    private EngineWayPoint2tMoveCore _engineWayPoint2TMoveCore;
+
     private void Awake()
     {
         _points = new List<Vector3>();
@@ -36,6 +38,12 @@ public class EnemyCar : MonoBehaviour
 
         _engineMoveCore = new EngineWayPointtMoveCore();
 
+       
+    }
+
+    private void Start()
+    {
+        _engineWayPoint2TMoveCore = new EngineWayPoint2tMoveCore(FrameworkStorage.GlobalData.LineFactory);
     }
 
     private int FindClosestPointAhead(Vector3 carPosition, Vector3 carDirection)
@@ -87,17 +95,17 @@ public class EnemyCar : MonoBehaviour
         TransmissionAngleState transmissionAngleState = TransmissionAngleState.Forward;
 
 
-      
+
 
         //
 
 
-        float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, closestPoint);
+        float angleToTarget = _engineWayPoint2TMoveCore.GetAngleToTurn(transform, _targetPointIndex, _points, _body.velocity.magnitude);//_engineMoveCore.GetAngleToTurn(transform, closestPoint);
 
 
        // float radius = Mathf.Abs(1f / curvature);
-     
-      //  DrawArc(radius, curvature < 0);
+
+        //  DrawArc(radius, curvature < 0);
 
         //
 
@@ -219,5 +227,77 @@ public class EngineWayPointtMoveCore : EngineMoveCoreBase
 
         return Vector3.SignedAngle(carTransform.forward, directionToClosestPoint, Vector3.up);
     }
+
+}
+
+public class EngineWayPoint2tMoveCore 
+{
+    public LineFactory _lineFactory;
+
+    public EngineWayPoint2tMoveCore(LineFactory lineFactory)
+    {
+        _lineFactory = lineFactory;
+    }
+
+    public float GetAngleToTurn(Transform carTransform , int index, List<Vector3> points, float currentSpeed)
+    {
+        _lineFactory.ClearLines();
+        Vector3 desiredDirection =
+    (points[index] - carTransform.position).normalized;
+
+        float headingError =
+            Vector3.SignedAngle(
+                carTransform.forward,
+                desiredDirection,
+                Vector3.up
+            ) * Mathf.Rad2Deg;
+
+   
+            Vector3 closest = FindPerpendicularPointOnLine(points[index], points[index-1], carTransform.position);
+
+        Debug.DrawLine(carTransform.position, closest, Color.green);
+        _lineFactory.CreateLine(carTransform.position, closest+Vector3.up * 0.1f, Color.yellow);
+
+        _lineFactory.CreateLine(points[index]+Vector3.up*0.1f, points[index - 1] + Vector3.up * 0.1f, Color.red, 100);
+
+
+        float crossTrackError = Vector3.Distance(carTransform.position, closest);
+
+
+            if (DeterminePointPositionRelativeToLine(points[index], points[index - 1], carTransform.position) > 0)
+            {
+                crossTrackError *= -1;
+            }
+
+            float k =1f; // headingError * 2f
+        float steering = headingError* 0.01f + Mathf.Atan((k * crossTrackError) / Mathf.Max(currentSpeed*5f, 0.1f)) * Mathf.Rad2Deg;
+
+            steering *=1;
+      
+        Debug.Log("headingError: " + headingError);
+        Debug.Log("crossTrackError: " + crossTrackError);
+        Debug.Log("Steering: " + steering);
+
+        return steering;
+
+    }
+
+    Vector3 FindPerpendicularPointOnLine(Vector3 start, Vector3 end, Vector3 point)
+    {
+        Vector3 lineDir = end - start;
+        Vector3 pointDir = point - start;
+        float t = Vector3.Dot(pointDir, lineDir) / Vector3.Dot(lineDir, lineDir);
+        Vector3 closestPointOnLine = start + t * lineDir;
+        return closestPointOnLine;
+    }
+
+    float DeterminePointPositionRelativeToLine(Vector3 start, Vector3 end, Vector3 point)
+    {
+        Vector3 lineDir = end - start;
+        Vector3 pointDir = point - start;
+        Vector3 crossProduct = Vector3.Cross(lineDir, pointDir);
+        return crossProduct.y;
+    }
+
 }
 
