@@ -34,16 +34,13 @@ public class EnemyCar : MonoBehaviour
         _transmission = gameObject.GetComponentInChildren<Transmission>();
         _body.centerOfMass += new Vector3(0, -0.8f, 0);
 
-        _targetPointIndex = FindClosestPointAhead(transform.position, transform.forward);
-
-        _engineMoveCore = new EngineWayPointtMoveCore();
-
-       
+        _targetPointIndex = FindClosestPointAhead(transform.position, transform.forward);  
     }
 
     private void Start()
     {
         _engineWayPoint2TMoveCore = new EngineWayPoint2tMoveCore(FrameworkStorage.GlobalData.LineFactory);
+        _engineMoveCore = new EnginePurePursuitMoveCore(FrameworkStorage.GlobalData.LineFactory);
     }
 
     private int FindClosestPointAhead(Vector3 carPosition, Vector3 carDirection)
@@ -100,8 +97,9 @@ public class EnemyCar : MonoBehaviour
         //
 
 
-        float angleToTarget = _engineWayPoint2TMoveCore.GetAngleToTurn(transform, _targetPointIndex, _points, _body.velocity.magnitude);//_engineMoveCore.GetAngleToTurn(transform, closestPoint);
+       // float angleToTarget = _engineWayPoint2TMoveCore.GetAngleToTurn(transform, _targetPointIndex, _points, _body.velocity.magnitude);//_engineMoveCore.GetAngleToTurn(transform, closestPoint);
 
+        float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, closestPoint);
 
        // float radius = Mathf.Abs(1f / curvature);
 
@@ -202,10 +200,18 @@ public abstract class EngineMoveCoreBase
 
 public class EnginePurePursuitMoveCore: EngineMoveCoreBase
 {
-    private const float _curvatureK = 15;
+    private  LineFactory _lineFactory;
+
+    public EnginePurePursuitMoveCore(LineFactory lineFactory)
+    {
+        _lineFactory = lineFactory;
+    }
+
+    private const float _curvatureK = 20;
 
     public override float GetAngleToTurn(Transform carTransform, Vector3 targetPosition)
     {
+        _lineFactory.ClearLines();
         Vector3 localTarget = carTransform.InverseTransformPoint(targetPosition);
         float L = localTarget.magnitude;
         float curvature = (_curvatureK * localTarget.x) / (L * L);
@@ -214,7 +220,7 @@ public class EnginePurePursuitMoveCore: EngineMoveCoreBase
 
         float angleToTarget = steering;
         float radius = Mathf.Abs(1f / curvature);
-
+        _lineFactory.DrawArc(carTransform, radius, curvature < 0);
         return angleToTarget;   
     }
 }
@@ -232,7 +238,7 @@ public class EngineWayPointtMoveCore : EngineMoveCoreBase
 
 public class EngineWayPoint2tMoveCore 
 {
-    public LineFactory _lineFactory;
+    private LineFactory _lineFactory;
 
     public EngineWayPoint2tMoveCore(LineFactory lineFactory)
     {

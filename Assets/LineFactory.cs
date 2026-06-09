@@ -5,74 +5,117 @@ public class LineFactory : MonoBehaviour
 {
     [SerializeField] private GameObject linePrefab; 
     private List<LineRenderer> _lineRenderers = new List<LineRenderer>();
+    private List<LineRenderer> _staticLineRenderers = new List<LineRenderer>();
 
-    private List<Vector3> _points;
+    private List<Vector3> _meshGenPoints;
+
     private void Start()
     {
-        _points = new List<Vector3>();
+        _meshGenPoints = new List<Vector3>();
 
         foreach (var a in FrameworkStorage.GlobalData.MeshGen.navPoints)
         {
-            _points.Add(a.position+Vector3.up * 0.1f);
+            _meshGenPoints.Add(a.position+Vector3.up * 0.1f);
         }
-
-    
-
-    //    GameObject lineObject = Instantiate(linePrefab);
-    //      LineRenderer lineRenderer = lineObject.GetComponent<LineRenderer>();
-
-        //        lineRenderer.positionCount = _points.Count;
-
-        //       lineRenderer.SetPositions(_points.ToArray());
-
-        CreateCurvedLine(_points, 600);
-        CreateCurvedLineWithBorders(_points, 600);
-
-        //        lineRenderer.material.color = Color.red;
-
-        //  _lineRenderers.Add(lineRenderer);
-    }
-    public void CreateCurvedLineWithBorders(List<Vector3> points, int segments = 40)
-    {
-        CreateCurvedLine(points, segments); // Рисуем основную кривую
-
-        // Создаем бортики
-        for (int i = 0; i < 2; i++)
-        {
-            CreateBorders(points, segments, i == 0 ? 4 : -4);
-        }
+        CreateCurvedLineWithBorder(_meshGenPoints,4f, 900, true);
     }
 
-    private void CreateBorders(List<Vector3> points, int segments, float offset)
+    public void CreateCurvedLineWithBorder(List<Vector3> controlPoints, float borderDistance, int segments = 40, bool isStatic = false)
     {
-        GameObject lineObject = Instantiate(linePrefab);
-        LineRenderer lineRenderer = lineObject.GetComponent<LineRenderer>();
-        lineRenderer.positionCount = segments + 1;
+        List<Vector3> curvePoints = new();
 
-        for (int i = 0; i <= segments; i++)
+        int totalPoints = segments * (controlPoints.Count - 1) + 1;
+
+        for (int j = 0; j < controlPoints.Count - 1; j++)
         {
-            float t = i / (float)segments; // Нормализованный параметр
-            Vector3 point = GetCatmullRomPosition(t, points); // Точка на курве
-            Vector3 tangent = GetCatmullRomTangent(t, points).normalized; // Получаем тангенциальный вектор
+            for (int i = 0; i < segments; i++)
+            {
+                float t = i / (float)segments;
 
-            // Смещаем точку вдоль тангенциального вектора
-            Vector3 borderPoint = point + new Vector3(-tangent.z, 0, tangent.x) * offset; // Учитываем смещение перпендикулярно тангенциальному вектору
+                Vector3 point = GetCatmullRomPosition(
+                    (j + t) / (controlPoints.Count - 1),
+                    controlPoints);
 
-            lineRenderer.SetPosition(i, borderPoint);
+                curvePoints.Add(point);
+            }
         }
 
-        _lineRenderers.Add(lineRenderer);
+        curvePoints.Add(controlPoints[^1]);
+
+   //     GameObject lineObject = Instantiate(linePrefab);
+
+      //  LineRenderer lineRenderer =
+        //    lineObject.GetComponent<LineRenderer>();
+
+//        lineRenderer.positionCount = curvePoints.Count;
+  //      lineRenderer.SetPositions(curvePoints.ToArray());
+
+        LineRenderer borderRenderer1 = CreateParallelLine(curvePoints, borderDistance);
+        LineRenderer borderRenderer2 = CreateParallelLine(curvePoints, -borderDistance);
+
+
+        if (isStatic)
+        {
+        //    _staticLineRenderers.Add(lineRenderer);
+            _staticLineRenderers.Add(borderRenderer1);
+            _staticLineRenderers.Add(borderRenderer2);
+        }
+        else
+        {
+          ///  _lineRenderers.Add(lineRenderer);
+            _lineRenderers.Add(borderRenderer1);
+            _lineRenderers.Add(borderRenderer2);
+        }
+    }
+
+    private LineRenderer CreateParallelLine(List<Vector3> curvePoints, float borderDistance)
+    {
+        List<Vector3> borderPoints = new();
+
+        for (int i = 0; i < curvePoints.Count; i++)
+        {
+            Vector3 tangent;
+
+            if (i == 0)
+            {
+                tangent = curvePoints[i + 1] - curvePoints[i];
+            }
+            else if (i == curvePoints.Count - 1)
+            {
+                tangent = curvePoints[i] - curvePoints[i - 1];
+            }
+            else
+            {
+                tangent = curvePoints[i + 1] - curvePoints[i - 1];
+            }
+
+            tangent.Normalize();
+
+            Vector3 normal = Vector3.Cross(Vector3.up, tangent).normalized;
+
+            borderPoints.Add(
+                curvePoints[i] + normal * borderDistance);
+        }
+
+        GameObject borderObject = Instantiate(linePrefab);
+
+        LineRenderer borderRenderer =
+            borderObject.GetComponent<LineRenderer>();
+
+        borderRenderer.positionCount = borderPoints.Count;
+        borderRenderer.SetPositions(borderPoints.ToArray());
+
+        return borderRenderer;
     }
 
     private Vector3 GetCatmullRomTangent(float t, List<Vector3> points)
     {
-        // Используется для получения тангенциального вектора
         int numSections = points.Count - 1;
         int p1 = Mathf.Clamp(Mathf.FloorToInt(t * numSections), 0, numSections);
         int p0 = Mathf.Clamp(p1 - 1, 0, numSections);
         int p2 = Mathf.Clamp(p1 + 1, 0, numSections);
 
-        float tLocal = (t * numSections) - p1; // Вычисляем t для интерполяции в пределах сегмента
+        float tLocal = (t * numSections) - p1; 
 
         Vector3 tangent = 0.5f * (
             (points[p2] - points[p0]) +
@@ -106,77 +149,74 @@ public class LineFactory : MonoBehaviour
         _lineRenderers.Add(lineRenderer);
     }
 
-
-
-    public void CreateCurvedLine(List<Vector3> points, int segments = 40)
-    {
-        GameObject lineObject = Instantiate(linePrefab);
-        LineRenderer lineRenderer = lineObject.GetComponent<LineRenderer>();
-        lineRenderer.positionCount = segments + 1;
-
-        for (int i = 0; i < segments + 1; i++)
-        {
-            float t = i / (float)segments; // Нормализованный параметр
-            Vector3 point = GetCatmullRomPosition(t, points);
-            lineRenderer.SetPosition(i, point);
-        }
-
-        _lineRenderers.Add(lineRenderer);
-    }
-
     private Vector3 GetCatmullRomPosition(float t, List<Vector3> points)
     {
-        // Определяем индекс точки, вокруг которой будем делать интерполяцию
-        int numSections = points.Count - 1;
-        int p0, p1, p2, p3;
+        int count = points.Count;
 
-        if (numSections == 0)
-        {
-            // Не хватает точек для построения сплайна
+        if (count == 0)
+            return Vector3.zero;
+
+        if (count == 1)
             return points[0];
-        }
 
-        // Делим t по сегментам
-        float tScaled = t * numSections;
-        int segmentIndex = Mathf.FloorToInt(tScaled);
-        t = tScaled - segmentIndex; // Вычисляем t для интерполяции в пределах сегмента
+        if (t <= 0f)
+            return points[0];
 
-        // Берем соответствующие контрольные точки
-        p0 = Mathf.Clamp(segmentIndex - 1, 0, numSections); // Предыдущая точка (или первая, если на краю)
-        p1 = Mathf.Clamp(segmentIndex, 0, numSections);     // Текущая точка
-        p2 = Mathf.Clamp(segmentIndex + 1, 0, numSections); // Следующая точка
-        p3 = Mathf.Clamp(segmentIndex + 2, 0, numSections); // Следующая после следующей (возможно, вылезет за пределы)
+        if (t >= 1f)
+            return points[count - 1];
 
-        // Используем формулу Catmull-Rom
-        Vector3 position = 0.5f * (
-            (2f * points[p1]) +
-            (-points[p0] + points[p2]) * t +
-            (2f * points[p0] - 5f * points[p1] + 4f * points[p2] - points[p3]) * t * t +
-            (-points[p0] + 3f * points[p1] - 3f * points[p2] + points[p3]) * t * t * t
+        int numSections = count - 1;
+
+        float scaledT = t * numSections;
+        int segment = Mathf.FloorToInt(scaledT);
+
+        float localT = scaledT - segment;
+
+        Vector3 p1 = points[segment];
+        Vector3 p2 = points[Mathf.Min(segment + 1, count - 1)];
+
+        Vector3 p0;
+        if (segment > 0)
+            p0 = points[segment - 1];
+        else
+            p0 = p1 + (p1 - p2);
+
+        Vector3 p3;
+        if (segment < count - 2)
+            p3 = points[segment + 2];
+        else
+            p3 = p2 + (p2 - p1);
+
+        float tt = localT * localT;
+        float ttt = tt * localT;
+
+        return 0.5f * (
+            (2f * p1) +
+            (-p0 + p2) * localT +
+            (2f * p0 - 5f * p1 + 4f * p2 - p3) * tt +
+            (-p0 + 3f * p1 - 3f * p2 + p3) * ttt
         );
-
-        return position;
     }
 
 
 
 
 
-    void DrawArc(float radius, bool leftTurn)
+    public void DrawArc(Transform transformCar, float radius, bool leftTurn)
     {
         List<Vector3> points = new List<Vector3>();
 
         Vector3 center =
-            transform.position +
-            transform.right * (leftTurn ? -radius : radius);
+            transformCar.position +
+            transformCar.right * (leftTurn ? -radius : radius);
 
         float startAngle =
             Mathf.Atan2(
-                transform.position.z - center.z,
-                transform.position.x - center.x
+                transformCar.position.z - center.z,
+                transformCar.position.x - center.x
             );
 
-        Vector3 previous = transform.position;
+        Vector3 previous = transformCar.position;
 
         for (int i = 1; i <= 10; i++)
         {
@@ -188,7 +228,7 @@ public class LineFactory : MonoBehaviour
 
             Vector3 next = new Vector3(
                 center.x + Mathf.Cos(angle) * radius,
-                transform.position.y,
+                transformCar.position.y,
                 center.z + Mathf.Sin(angle) * radius
             );
             points.Add(previous);
@@ -196,17 +236,25 @@ public class LineFactory : MonoBehaviour
 
             previous = next;
         }
-        
+        GameObject borderObject = Instantiate(linePrefab);
+
+        LineRenderer borderRenderer =
+            borderObject.GetComponent<LineRenderer>();
+
+        borderRenderer.positionCount = points.Count;
+        borderRenderer.SetPositions(points.ToArray());
+        _lineRenderers.Add(borderRenderer);
+
     }
 
     public void ClearLines()
     {
         foreach (LineRenderer lineRenderer in _lineRenderers)
         {
-      //      Destroy(lineRenderer.gameObject);
+            Destroy(lineRenderer.gameObject);
         }
 
-     //   _lineRenderers.Clear();
+        _lineRenderers.Clear();
     }
 }
 
