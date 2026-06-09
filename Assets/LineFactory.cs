@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class LineFactory : MonoBehaviour
 {
+    [SerializeField] private Material _staticMaterial;
+    [SerializeField] private Material _mainMaterial;
+
     [SerializeField] private GameObject linePrefab; 
     private List<LineRenderer> _lineRenderers = new List<LineRenderer>();
     private List<LineRenderer> _staticLineRenderers = new List<LineRenderer>();
@@ -199,9 +202,6 @@ public class LineFactory : MonoBehaviour
     }
 
 
-
-
-
     public void DrawArc(Transform transformCar, float radius, bool leftTurn)
     {
         List<Vector3> points = new List<Vector3>();
@@ -240,6 +240,8 @@ public class LineFactory : MonoBehaviour
 
         LineRenderer borderRenderer =
             borderObject.GetComponent<LineRenderer>();
+
+        borderRenderer.material = _mainMaterial;
 
         borderRenderer.positionCount = points.Count;
         borderRenderer.SetPositions(points.ToArray());

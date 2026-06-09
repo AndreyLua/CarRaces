@@ -7,6 +7,7 @@ public class EnemyCar : MonoBehaviour
     [SerializeField] private ERMeshGen _meshGen;
     [SerializeField] private EngineConfig _engineConfig;
 
+    private SpeedUIScreen _speedUI;
     private Transmission _transmission;
     private Rigidbody _body;
     private List<Vector3> _points;
@@ -39,6 +40,8 @@ public class EnemyCar : MonoBehaviour
 
     private void Start()
     {
+        _speedUI = UIScreenRepository.GetScreen<SpeedUIScreen>();
+
         _engineWayPoint2TMoveCore = new EngineWayPoint2tMoveCore(FrameworkStorage.GlobalData.LineFactory);
         _engineMoveCore = new EnginePurePursuitMoveCore(FrameworkStorage.GlobalData.LineFactory);
     }
@@ -83,12 +86,6 @@ public class EnemyCar : MonoBehaviour
             }
         }
   
-
-        if (closestPoint != Vector3.zero)
-        {
-            Debug.DrawLine(transform.position, closestPoint, Color.red);
-        }
-
         TransmissionAngleState transmissionAngleState = TransmissionAngleState.Forward;
 
 
@@ -152,6 +149,10 @@ public class EnemyCar : MonoBehaviour
         }
 
         _transmission.OnTransmissionAngleStateChange(transmissionAngleState, steeringAmount, CarDirection.Forward);
+
+
+        _speedUI.SetSpeed((_body.velocity.magnitude * 5).ToInt());
+        _speedUI.SetGear(_engine.CurrentGear);
     }
 
     void DrawArc(float radius, bool leftTurn)

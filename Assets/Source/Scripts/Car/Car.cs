@@ -109,8 +109,8 @@ public class Car : MonoBehaviour, ITriggerable
 
         _targetArrowUIScreen.SetTargetAngle(angle);
         Move();
-        _speedUI.SetSpeed((_body.velocity.magnitude*5).ToInt());
-        _speedUI.SetGear(_engine.CurrentGear);
+     //   _speedUI.SetSpeed((_body.velocity.magnitude*5).ToInt());
+      //  _speedUI.SetGear(_engine.CurrentGear);
     }
 
     private void Move()
