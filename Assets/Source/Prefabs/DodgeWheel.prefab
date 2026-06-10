@@ -105,11 +105,11 @@ WheelCollider:
     m_AsymptoteValue: 1.125
     m_Stiffness: 2.25
   m_SidewaysFriction:
-    m_ExtremumSlip: 0.3
-    m_ExtremumValue: 1.5
-    m_AsymptoteSlip: 0.75
-    m_AsymptoteValue: 1.125
-    m_Stiffness: 1.5
+    m_ExtremumSlip: 0.45000008
+    m_ExtremumValue: 2.2499998
+    m_AsymptoteSlip: 1.125
+    m_AsymptoteValue: 1.6875001
+    m_Stiffness: 2.2499998
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0

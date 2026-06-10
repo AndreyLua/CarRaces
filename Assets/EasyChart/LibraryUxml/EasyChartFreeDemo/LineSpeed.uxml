@@ -1,0 +1,4 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" ec="EasyChart" editor-extension-mode="False">
+    <ui:Template name="Line 2" src="project://database/Assets/EasyChart/LibraryUxml/EasyChart%20Demo/Line/Line%202.uxml?fileID=9197481963319205126&amp;guid=b56c399fdebe68c4185ef6c78b5ac0b6&amp;type=3#Line 2" />
+    <ui:Instance template="Line 2" name="Line" />
+</ui:UXML>

@@ -1,9 +1,13 @@
+using EasyChart.Samples;
 using KrisDevelopment.ERMG;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyCar : MonoBehaviour
 {
+    [SerializeField] private JsonInjectionExample _jsonInjectionExample;
+
     [SerializeField] private ERMeshGen _meshGen;
     [SerializeField] private EngineConfig _engineConfig;
 
@@ -19,7 +23,7 @@ public class EnemyCar : MonoBehaviour
     private EngineMoveCoreBase _engineMoveCore;
 
     private EngineWayPoint2tMoveCore _engineWayPoint2TMoveCore;
-
+    private Coroutine _sendSpeedCoroutine;
     private void Awake()
     {
         _points = new List<Vector3>();
@@ -44,6 +48,11 @@ public class EnemyCar : MonoBehaviour
 
         _engineWayPoint2TMoveCore = new EngineWayPoint2tMoveCore(FrameworkStorage.GlobalData.LineFactory);
         _engineMoveCore = new EnginePurePursuitMoveCore(FrameworkStorage.GlobalData.LineFactory);
+
+
+        StartSendingSpeed();
+
+      //  _jsonInjectionExample.UpdateSpeed((_body.velocity.magnitude * 5).ToInt());
     }
 
     private int FindClosestPointAhead(Vector3 carPosition, Vector3 carDirection)
@@ -72,8 +81,32 @@ public class EnemyCar : MonoBehaviour
         return closestPointIndex;
     }
 
+    private IEnumerator SendSpeedEveryTwoSeconds()
+    {
+        while (true) // Бесконечный цикл, который будет выполняться до остановки
+        {
+            // Получаем скорость (мagnitude вектора скорости)
+            int speed = ((_body.velocity.magnitude * 5).ToInt()); // Приведение значения к int
+            _jsonInjectionExample.UpdateSpeed(speed); // Отправляем скорость
+
+            yield return new WaitForSeconds(0.1f); // Ждём 2 секунды перед следующим отправлением
+        }
+    }
+
+    private void StartSendingSpeed()
+    {
+        // Если корутина уже запущена, остановить ее перед повторным запуском
+        if (_sendSpeedCoroutine != null)
+        {
+            StopCoroutine(_sendSpeedCoroutine);
+        }
+
+        _sendSpeedCoroutine = StartCoroutine(SendSpeedEveryTwoSeconds());
+    }
+
     public void Update()
     {
+      //  _jsonInjectionExample.UpdateSpeed((_body.velocity.magnitude).ToInt());
 
         Vector3 closestPoint = _points[_targetPointIndex];
 
@@ -155,42 +188,6 @@ public class EnemyCar : MonoBehaviour
         _speedUI.SetGear(_engine.CurrentGear);
     }
 
-    void DrawArc(float radius, bool leftTurn)
-    {
-        Gizmos.color = Color.red;
-
-        Vector3 center =
-            transform.position +
-            transform.right * (leftTurn ? -radius : radius);
-
-        float startAngle =
-            Mathf.Atan2(
-                transform.position.z - center.z,
-                transform.position.x - center.x
-            );
-
-        Vector3 previous = transform.position;
-
-        for (int i = 1; i <= 20; i++)
-        {
-            float angleStep = Mathf.PI / 60;
-
-            float angle =
-                startAngle +
-                (leftTurn ? angleStep * i : -angleStep * i);
-
-            Vector3 next = new Vector3(
-                center.x + Mathf.Cos(angle) * radius,
-                transform.position.y,
-                center.z + Mathf.Sin(angle) * radius
-            );
-
-         //  Debug.Log("ffff "+ next);
-            Debug.DrawLine(previous, next);
-
-            previous = next;
-        }
-    }
 }
 
 
