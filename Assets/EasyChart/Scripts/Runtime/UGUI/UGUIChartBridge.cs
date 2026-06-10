@@ -509,7 +509,8 @@ namespace EasyChart.UGUI
             UpdatePosition();
             if (_chartElement != null)
             {
-                _chartElement.ForceRefreshProfile();
+                _chartElement.RefreshData(false, false);
+
             }
         }
 

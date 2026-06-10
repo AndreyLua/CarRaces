@@ -88,8 +88,7 @@ namespace EasyChart.Samples
 
         public void UpdateSpeed(int speed)
         {
-            _chartElementName = "Line2";
-
+     
             string randomJson = GenerateSpeedJson(speed);
             JsonData = randomJson;
             UpdateChart();
@@ -98,8 +97,15 @@ namespace EasyChart.Samples
 
         public void UpdateChart()
         {
-            _uiToolkitJsonInjection.JsonContent = JsonData;
-            _uiToolkitJsonInjection.ApplyJsonToChart();
+            if (_uiToolkitJsonInjection)
+            {
+                _uiToolkitJsonInjection.JsonContent = JsonData;
+                _uiToolkitJsonInjection.ApplyJsonToChart();
+            }else
+            {
+                _uguiJsonInjection.JsonContent = JsonData;
+                _uguiJsonInjection.ApplyJsonToChart();
+            }
         }
 
         /// <summary>
