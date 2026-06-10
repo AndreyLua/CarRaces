@@ -7,6 +7,9 @@ using UnityEngine;
 public class EnemyCar : MonoBehaviour
 {
     [SerializeField] private JsonInjectionExample _jsonInjectionExample;
+    [SerializeField] private JsonInjectionExample _jsonInjectionExample2;
+
+
 
     [SerializeField] private ERMeshGen _meshGen;
     [SerializeField] private EngineConfig _engineConfig;
@@ -24,6 +27,11 @@ public class EnemyCar : MonoBehaviour
 
     private EngineWayPoint2tMoveCore _engineWayPoint2TMoveCore;
     private Coroutine _sendSpeedCoroutine;
+
+    private float _pointClosely = 0;
+    private float _distanceToTrace = 0;
+
+
     private void Awake()
     {
         _points = new List<Vector3>();
@@ -89,6 +97,10 @@ public class EnemyCar : MonoBehaviour
             int speed = ((_body.velocity.magnitude * 5).ToInt()); // Приведение значения к int
             _jsonInjectionExample.UpdateSpeed(speed); // Отправляем скорость
 
+            _jsonInjectionExample2.UpdateSpeed(_pointClosely.ToInt());
+
+            _pointClosely += _distanceToTrace;
+
             yield return new WaitForSeconds(0.1f); // Ждём 2 секунды перед следующим отправлением
         }
     }
@@ -106,6 +118,10 @@ public class EnemyCar : MonoBehaviour
 
     public void Update()
     {
+        if (_targetPointIndex == 35)
+        {
+            return;
+        }
       //  _jsonInjectionExample.UpdateSpeed((_body.velocity.magnitude).ToInt());
 
         Vector3 closestPoint = _points[_targetPointIndex];
@@ -121,21 +137,9 @@ public class EnemyCar : MonoBehaviour
   
         TransmissionAngleState transmissionAngleState = TransmissionAngleState.Forward;
 
+        float angleToTarget = _engineWayPoint2TMoveCore.GetAngleToTurn(transform, _targetPointIndex, _points, _body.velocity.magnitude);//_engineMoveCore.GetAngleToTurn(transform, closestPoint);
 
-
-
-        //
-
-
-       // float angleToTarget = _engineWayPoint2TMoveCore.GetAngleToTurn(transform, _targetPointIndex, _points, _body.velocity.magnitude);//_engineMoveCore.GetAngleToTurn(transform, closestPoint);
-
-        float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, closestPoint);
-
-       // float radius = Mathf.Abs(1f / curvature);
-
-        //  DrawArc(radius, curvature < 0);
-
-        //
+       // float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, closestPoint);
 
 
         float currentSpeed = _body.velocity.magnitude;
@@ -183,9 +187,34 @@ public class EnemyCar : MonoBehaviour
 
         _transmission.OnTransmissionAngleStateChange(transmissionAngleState, steeringAmount, CarDirection.Forward);
 
+        Vector3 closest = FindPerpendicularPointOnLine(_points[FindClosestPointAhead(transform.position, transform.forward)+1], _points[FindClosestPointAhead(transform.position, transform.forward)], transform.position);
+
+        _distanceToTrace = Vector3.Distance(transform.position, closest);
+
+        float maxDistance = 6f;
+
+        float t = Mathf.Clamp01(_distanceToTrace / maxDistance);
+
+     
+        Color color = Color.Lerp(Color.green, Color.red, t);
+
+        FrameworkStorage.GlobalData.LineFactory.CreateLine(
+            transform.position,
+            closest + Vector3.up * 0.1f,
+            color);
+
 
         _speedUI.SetSpeed((_body.velocity.magnitude * 5).ToInt());
         _speedUI.SetGear(_engine.CurrentGear);
+    }
+
+    Vector3 FindPerpendicularPointOnLine(Vector3 start, Vector3 end, Vector3 point)
+    {
+        Vector3 lineDir = end - start;
+        Vector3 pointDir = point - start;
+        float t = Vector3.Dot(pointDir, lineDir) / Vector3.Dot(lineDir, lineDir);
+        Vector3 closestPointOnLine = start + t * lineDir;
+        return closestPointOnLine;
     }
 
 }
@@ -194,6 +223,16 @@ public class EnemyCar : MonoBehaviour
 public abstract class EngineMoveCoreBase
 {
     public abstract float GetAngleToTurn(Transform carTransform, Vector3 targetPosition);
+
+    protected Vector3 FindPerpendicularPointOnLine(Vector3 start, Vector3 end, Vector3 point)
+    {
+        Vector3 lineDir = end - start;
+        Vector3 pointDir = point - start;
+        float t = Vector3.Dot(pointDir, lineDir) / Vector3.Dot(lineDir, lineDir);
+        Vector3 closestPointOnLine = start + t * lineDir;
+        return closestPointOnLine;
+    }
+
 }
 
 public class EnginePurePursuitMoveCore: EngineMoveCoreBase
@@ -218,9 +257,12 @@ public class EnginePurePursuitMoveCore: EngineMoveCoreBase
 
         float angleToTarget = steering;
         float radius = Mathf.Abs(1f / curvature);
+
+
         _lineFactory.DrawArc(carTransform, radius, curvature < 0);
         return angleToTarget;   
     }
+
 }
 
 public class EngineWayPointtMoveCore : EngineMoveCoreBase
@@ -259,7 +301,6 @@ public class EngineWayPoint2tMoveCore
    
             Vector3 closest = FindPerpendicularPointOnLine(points[index], points[index-1], carTransform.position);
 
-        Debug.DrawLine(carTransform.position, closest, Color.green);
         _lineFactory.CreateLine(carTransform.position, closest+Vector3.up * 0.1f, Color.yellow);
 
         _lineFactory.CreateLine(points[index]+Vector3.up*0.1f, points[index - 1] + Vector3.up * 0.1f, Color.red, 100);

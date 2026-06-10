@@ -45,27 +45,17 @@ public class LineFactory : MonoBehaviour
 
         curvePoints.Add(controlPoints[^1]);
 
-   //     GameObject lineObject = Instantiate(linePrefab);
-
-      //  LineRenderer lineRenderer =
-        //    lineObject.GetComponent<LineRenderer>();
-
-//        lineRenderer.positionCount = curvePoints.Count;
-  //      lineRenderer.SetPositions(curvePoints.ToArray());
-
         LineRenderer borderRenderer1 = CreateParallelLine(curvePoints, borderDistance);
         LineRenderer borderRenderer2 = CreateParallelLine(curvePoints, -borderDistance);
 
 
         if (isStatic)
         {
-        //    _staticLineRenderers.Add(lineRenderer);
             _staticLineRenderers.Add(borderRenderer1);
             _staticLineRenderers.Add(borderRenderer2);
         }
         else
         {
-          ///  _lineRenderers.Add(lineRenderer);
             _lineRenderers.Add(borderRenderer1);
             _lineRenderers.Add(borderRenderer2);
         }
@@ -75,7 +65,7 @@ public class LineFactory : MonoBehaviour
     {
         List<Vector3> borderPoints = new();
 
-        for (int i = 0; i < curvePoints.Count; i++)
+        for (int i = 1500; i < curvePoints.Count; i++)
         {
             Vector3 tangent;
 
