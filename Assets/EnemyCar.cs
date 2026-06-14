@@ -3,16 +3,15 @@ using KrisDevelopment.ERMG;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class EnemyCar : MonoBehaviour
 {
     [SerializeField] private JsonInjectionExample _jsonInjectionExample;
     [SerializeField] private JsonInjectionExample _jsonInjectionExample2;
-
-
-
     [SerializeField] private ERMeshGen _meshGen;
     [SerializeField] private EngineConfig _engineConfig;
+    [SerializeField] private NavMeshAgent _navmeshAgent;
 
     private SpeedUIScreen _speedUI;
     private TimeUIScreen _timeUI;
@@ -20,20 +19,26 @@ public class EnemyCar : MonoBehaviour
     private Transmission _transmission;
     private Rigidbody _body;
     private List<Vector3> _points;
-    private int _targetPointIndex;
     private Engine _engine;
     private BrakeLights _brakeLights;
     private bool _shouldBrake;
 
     private EngineMoveCoreBase _engineMoveCore;
 
-    private EngineWayPoint2tMoveCore _engineWayPoint2TMoveCore;
     private Coroutine _sendSpeedCoroutine;
 
     private float _pointClosely = 0;
     private float _distanceToTrace = 0;
 
     private float _timer = 0;
+
+    private List<double> _times = new List<double>();
+    private List<double> _speeds = new List<double>();
+
+
+    private Vector3 _navmeshTargetPosition;
+    private RouteNavigator _routeNavigator;
+
 
     private void Awake()
     {
@@ -50,7 +55,8 @@ public class EnemyCar : MonoBehaviour
         _transmission = gameObject.GetComponentInChildren<Transmission>();
         _body.centerOfMass += new Vector3(0, -0.8f, 0);
 
-        _targetPointIndex = FindClosestPointAhead(transform.position, transform.forward);  
+        _routeNavigator = new RouteNavigator(_points, transform.position, transform.forward);
+        
     }
 
     private void Start()
@@ -58,41 +64,18 @@ public class EnemyCar : MonoBehaviour
         _speedUI = UIScreenRepository.GetScreen<SpeedUIScreen>();
         _timeUI = UIScreenRepository.GetScreen<TimeUIScreen>();
 
-        _engineWayPoint2TMoveCore = new EngineWayPoint2tMoveCore(FrameworkStorage.GlobalData.LineFactory);
-       // _engineMoveCore = new EnginePurePursuitMoveCore(FrameworkStorage.GlobalData.LineFactory);
-        _engineMoveCore = new EngineWayPointtMoveCore(FrameworkStorage.GlobalData.LineFactory);
+        _engineMoveCore = new EngineWayPoint2tMoveCore(FrameworkStorage.GlobalData.LineFactory);
+      //  _engineMoveCore = new EnginePurePursuitMoveCore(FrameworkStorage.GlobalData.LineFactory);
+        //_engineMoveCore = new EngineWayPointtMoveCore(FrameworkStorage.GlobalData.LineFactory);
 
 
         StartSendingSpeed();
+        _navmeshAgent.isStopped = true;
 
-      //  _jsonInjectionExample.UpdateSpeed((_body.velocity.magnitude * 5).ToInt());
+
+        //  _jsonInjectionExample.UpdateSpeed((_body.velocity.magnitude * 5).ToInt());
     }
 
-    private int FindClosestPointAhead(Vector3 carPosition, Vector3 carDirection)
-    {
-        int closestPointIndex = -1;
-        float shortestDistance = Mathf.Infinity;
-
-        for (int i = 0; i < _points.Count; i++)
-        {
-            Vector3 directionToPoint = _points[i] - carPosition;
-            float forwardDot = Vector3.Dot(carDirection, directionToPoint.normalized);
-
-            if (forwardDot > 0)
-            {
-                float distance = Vector3.Distance(carPosition, _points[i]);
-
-            
-                if (distance < shortestDistance)
-                {
-                    shortestDistance = distance;
-                    closestPointIndex = i;
-                }
-            }
-        }
-
-        return closestPointIndex;
-    }
 
     private IEnumerator SendSpeedEveryTwoSeconds()
     {
@@ -105,6 +88,8 @@ public class EnemyCar : MonoBehaviour
             _jsonInjectionExample2.UpdateSpeed(_pointClosely.ToInt());
 
             _pointClosely += _distanceToTrace;
+            _times.Add(_timer);
+            _speeds.Add((_body.velocity.magnitude * 5));
 
             yield return new WaitForSeconds(0.1f); // ∆дЄм 2 секунды перед следующим отправлением
         }
@@ -120,31 +105,27 @@ public class EnemyCar : MonoBehaviour
         _sendSpeedCoroutine = StartCoroutine(SendSpeedEveryTwoSeconds());
     }
 
-    public int GetNextPoint(int indexPoint)
-    {
-        if (indexPoint - 1 < 0)
-        {
-            return _points.Count-1;
-        }
-        return indexPoint - 1;
-    }
-
-    public int GetPreviousPoint(int indexPoint)
-    {
-        if (indexPoint + 1 >= _points.Count)
-        {
-            return 0;
-        }
-        return indexPoint + 1;
-    }
-
-
     public void Update()
     {
-        if (_targetPointIndex == 34)
+
+/*       NavMeshHit hit;
+        if (NavMesh.SamplePosition(_points[15], out hit, 1.0f, NavMesh.AllAreas))
         {
+            _navmeshTargetPosition = hit.position;
+            Debug.Log(_navmeshTargetPosition);
+        }
+        if (_navmeshTargetPosition == null )
+        {
+            _navmeshTargetPosition = transform.position;
+        }*/
+
+        if (_routeNavigator.CurrentTargetIndex == 34)
+        {
+            StopCoroutine(_sendSpeedCoroutine);
             _transmission.OnBrakingActiveChange(true, 100);
             _engine.OnMotorPullingChange(false);
+            
+            Debug.Log("METRIC: "+ MotionMetrics.CalculateRmsAcceleration(_times,_speeds));
             return;
         }
 
@@ -152,19 +133,45 @@ public class EnemyCar : MonoBehaviour
 
         //  _jsonInjectionExample.UpdateSpeed((_body.velocity.magnitude).ToInt());
 
-        Vector3 closestPoint = _points[_targetPointIndex];
+        Vector3 closestPoint = _points[_routeNavigator.CurrentTargetIndex];
 
         if (Vector3.Distance(closestPoint, transform.position) < 15)
         {
-            _targetPointIndex = GetNextPoint(_targetPointIndex);
+        //    _routeNavigator.UpdateTarget()
+            _routeNavigator.CurrentTargetIndex = _routeNavigator.GetNextPoint(_routeNavigator.CurrentTargetIndex);
    
         }
   
         TransmissionAngleState transmissionAngleState = TransmissionAngleState.Forward;
 
-       // float angleToTarget = _engineWayPoint2TMoveCore.GetAngleToTurn(transform, _targetPointIndex, _points, _body.velocity.magnitude);//_engineMoveCore.GetAngleToTurn(transform, closestPoint);
 
-        float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, closestPoint);
+        NavigationContext context =
+            new NavigationContext()
+            {
+                TargetPoint =
+                    _routeNavigator.CurrentTarget,
+
+                TargetIndex =
+                    _routeNavigator.CurrentTargetIndex,
+
+                NextTargetIndex =
+                    _routeNavigator.GetNextPoint(_routeNavigator.CurrentTargetIndex),
+
+                NextTargetPoint =
+                    _points[_routeNavigator.GetNextPoint(_routeNavigator.CurrentTargetIndex)],
+                Route =
+                    _points,
+
+                CurrentSpeed =
+                    _body.velocity.magnitude
+            };
+
+        //  float angleToTarget = _engineWayPoint2TMoveCore.GetAngleToTurn(transform, _targetPointIndex, _points, _body.velocity.magnitude);
+        //_engineMoveCore.GetAngleToTurn(transform, closestPoint);
+
+        float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, context);
+
+      //  float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, _navmeshTargetPosition);
 
         float currentSpeed = _body.velocity.magnitude;
 
@@ -210,7 +217,7 @@ public class EnemyCar : MonoBehaviour
 
         _transmission.OnTransmissionAngleStateChange(transmissionAngleState, steeringAmount, CarDirection.Forward);
 
-        Vector3 closest = FindPerpendicularPointOnLine(_points[GetPreviousPoint(FindClosestPointAhead(transform.position, transform.forward)+1)], _points[FindClosestPointAhead(transform.position, transform.forward)], transform.position);
+        Vector3 closest = PathGeometry.FindClosestPoint(transform.position, _points);
 
         _distanceToTrace = Vector3.Distance(transform.position, closest);
 
@@ -231,32 +238,12 @@ public class EnemyCar : MonoBehaviour
 
         _timeUI.SeTime(_timer);
     }
-
-    Vector3 FindPerpendicularPointOnLine(Vector3 start, Vector3 end, Vector3 point)
-    {
-        Vector3 lineDir = end - start;
-        Vector3 pointDir = point - start;
-        float t = Vector3.Dot(pointDir, lineDir) / Vector3.Dot(lineDir, lineDir);
-        Vector3 closestPointOnLine = start + t * lineDir;
-        return closestPointOnLine;
-    }
-
 }
 
 
 public abstract class EngineMoveCoreBase
 {
-    public abstract float GetAngleToTurn(Transform carTransform, Vector3 targetPosition);
-
-    protected Vector3 FindPerpendicularPointOnLine(Vector3 start, Vector3 end, Vector3 point)
-    {
-        Vector3 lineDir = end - start;
-        Vector3 pointDir = point - start;
-        float t = Vector3.Dot(pointDir, lineDir) / Vector3.Dot(lineDir, lineDir);
-        Vector3 closestPointOnLine = start + t * lineDir;
-        return closestPointOnLine;
-    }
-
+    public abstract float GetAngleToTurn(Transform carTransform, NavigationContext context);
 }
 
 public class EnginePurePursuitMoveCore: EngineMoveCoreBase
@@ -270,10 +257,10 @@ public class EnginePurePursuitMoveCore: EngineMoveCoreBase
 
     private const float _curvatureK = 20;
 
-    public override float GetAngleToTurn(Transform carTransform, Vector3 targetPosition)
+    public override float GetAngleToTurn(Transform carTransform, NavigationContext context)
     {
         _lineFactory.ClearLines();
-        Vector3 localTarget = carTransform.InverseTransformPoint(targetPosition);
+        Vector3 localTarget = carTransform.InverseTransformPoint(context.TargetPoint);
         float L = localTarget.magnitude;
         float curvature = (_curvatureK * localTarget.x) / (L * L);
 
@@ -284,9 +271,8 @@ public class EnginePurePursuitMoveCore: EngineMoveCoreBase
 
 
         _lineFactory.DrawArc(carTransform, radius, curvature < 0);
-        return angleToTarget;   
+        return angleToTarget;
     }
-
 }
 
 public class EngineWayPointtMoveCore : EngineMoveCoreBase
@@ -298,108 +284,146 @@ public class EngineWayPointtMoveCore : EngineMoveCoreBase
     {
         _lineFactory = lineFactory;
     }
-    public override float GetAngleToTurn(Transform carTransform, Vector3 targetPosition)
+
+    public override float GetAngleToTurn(Transform carTransform, NavigationContext context)
     {
         _lineFactory.ClearLines();
 
-        Vector3 directionToClosestPoint = (targetPosition - carTransform.position).normalized;
+        Vector3 directionToClosestPoint = (context.TargetPoint - carTransform.position).normalized;
 
-        _lineFactory.CreateLine(carTransform.position, targetPosition, Color.blue);
+        _lineFactory.CreateLine(carTransform.position, context.TargetPoint, Color.blue);
 
 
         return Vector3.SignedAngle(carTransform.forward, directionToClosestPoint, Vector3.up);
     }
-
 }
 
-public class EngineWayPoint2tMoveCore 
+public class EngineWayPoint2tMoveCore : EngineMoveCoreBase
 {
-    private LineFactory _lineFactory;
-    private List<Vector3> _points;
+    private readonly LineFactory _lineFactory;
+
+    private const float HeadingGain = 0.01f;
+    private const float CrossTrackGain = 1f;
+    private const float SpeedFactor = 6.7f;
+    private const float MinSpeed = 0.1f;
 
     public EngineWayPoint2tMoveCore(LineFactory lineFactory)
     {
         _lineFactory = lineFactory;
     }
 
-    public float GetAngleToTurn(Transform carTransform , int index, List<Vector3> points, float currentSpeed)
+    public override float GetAngleToTurn(
+        Transform carTransform,
+        NavigationContext context)
     {
-        _points = points;
-
         _lineFactory.ClearLines();
-        Vector3 desiredDirection =
-    (points[index] - carTransform.position).normalized;
+
+        Vector3 currentPoint = context.TargetPoint;
+        Vector3 nextPoint = context.NextTargetPoint;
 
         float headingError =
-            Vector3.SignedAngle(
-                carTransform.forward,
-                desiredDirection,
-                Vector3.up
-            ) * Mathf.Rad2Deg;
+            CalculateHeadingError(
+                carTransform,
+                currentPoint);
 
-   
-            Vector3 closest = FindPerpendicularPointOnLine(points[index], points[GetNextPoint(index)], carTransform.position);
+        Vector3 closestPoint =
+            PathGeometry.FindPerpendicularPointOnLine(
+                currentPoint,
+                nextPoint,
+                carTransform.position);
 
-        _lineFactory.CreateLine(carTransform.position, closest+Vector3.up * 0.1f, Color.yellow);
+        DrawDebug(
+            carTransform.position,
+            closestPoint,
+            currentPoint,
+            nextPoint);
 
-        _lineFactory.CreateLine(points[index]+Vector3.up*0.1f, points[GetNextPoint(index)] + Vector3.up * 0.1f, Color.red, 100);
+        float crossTrackError =
+            CalculateCrossTrackError(
+                carTransform.position,
+                closestPoint,
+                currentPoint,
+                nextPoint);
 
+        float steering =
+            CalculateSteering(
+                headingError,
+                crossTrackError,
+                context.CurrentSpeed);
 
-        float crossTrackError = Vector3.Distance(carTransform.position, closest);
-
-
-            if (DeterminePointPositionRelativeToLine(points[index], points[GetNextPoint(index)], carTransform.position) > 0)
-            {
-                crossTrackError *= -1;
-            }
-
-            float k =1f; // headingError * 2f
-        float steering = headingError* 0.01f + Mathf.Atan((k * crossTrackError) / Mathf.Max(currentSpeed*5f, 0.1f)) * Mathf.Rad2Deg;
-
-            steering *=1;
-      
-        Debug.Log("headingError: " + headingError);
-        Debug.Log("crossTrackError: " + crossTrackError);
-        Debug.Log("Steering: " + steering);
+        Debug.Log($"headingError: {headingError}");
+        Debug.Log($"crossTrackError: {crossTrackError}");
+        Debug.Log($"Steering: {steering}");
 
         return steering;
-
     }
 
-    public int GetNextPoint(int indexPoint)
+    private float CalculateHeadingError(
+        Transform carTransform,
+        Vector3 targetPoint)
     {
-        if (indexPoint - 1 < 0)
+        Vector3 desiredDirection =
+            (targetPoint - carTransform.position).normalized;
+
+        return Vector3.SignedAngle(
+                   carTransform.forward,
+                   desiredDirection,
+                   Vector3.up)
+               * Mathf.Rad2Deg;
+    }
+
+    private float CalculateCrossTrackError(
+        Vector3 carPosition,
+        Vector3 closestPoint,
+        Vector3 segmentStart,
+        Vector3 segmentEnd)
+    {
+        float error =
+            Vector3.Distance(
+                carPosition,
+                closestPoint);
+
+        bool isLeftSide =
+            PathGeometry.DeterminePointPositionRelativeToLine(
+                segmentStart,
+                segmentEnd,
+                carPosition) > 0;
+
+        if (isLeftSide)
         {
-            return _points.Count - 1;
+            error *= -1;
         }
-        return indexPoint - 1;
+
+        return error;
     }
 
-    public int GetPreviousPoint(int indexPoint)
+    private float CalculateSteering(
+        float headingError,
+        float crossTrackError,
+        float speed)
     {
-        if (indexPoint + 1 >= _points.Count)
-        {
-            return 0;
-        }
-        return indexPoint + 1;
+        return headingError * HeadingGain +
+               Mathf.Atan(
+                   (CrossTrackGain * crossTrackError)
+                   / Mathf.Max(speed * SpeedFactor, MinSpeed))
+               * Mathf.Rad2Deg;
     }
 
-    Vector3 FindPerpendicularPointOnLine(Vector3 start, Vector3 end, Vector3 point)
+    private void DrawDebug(
+        Vector3 carPosition,
+        Vector3 closestPoint,
+        Vector3 currentPoint,
+        Vector3 nextPoint)
     {
-        Vector3 lineDir = end - start;
-        Vector3 pointDir = point - start;
-        float t = Vector3.Dot(pointDir, lineDir) / Vector3.Dot(lineDir, lineDir);
-        Vector3 closestPointOnLine = start + t * lineDir;
-        return closestPointOnLine;
-    }
+        _lineFactory.CreateLine(
+            carPosition,
+            closestPoint + Vector3.up * 0.1f,
+            Color.yellow);
 
-    float DeterminePointPositionRelativeToLine(Vector3 start, Vector3 end, Vector3 point)
-    {
-        Vector3 lineDir = end - start;
-        Vector3 pointDir = point - start;
-        Vector3 crossProduct = Vector3.Cross(lineDir, pointDir);
-        return crossProduct.y;
+        _lineFactory.CreateLine(
+            currentPoint + Vector3.up * 0.1f,
+            nextPoint + Vector3.up * 0.1f,
+            Color.red,
+            100);
     }
-
 }
-
