@@ -7,6 +7,9 @@ using UnityEngine.AI;
 
 public class EnemyCar : MonoBehaviour
 {
+    [SerializeField]
+    private SteeringAlgorithm _steeringAlgorithm;
+
     [SerializeField] private JsonInjectionExample _jsonInjectionExample;
     [SerializeField] private JsonInjectionExample _jsonInjectionExample2;
     [SerializeField] private ERMeshGen _meshGen;
@@ -23,18 +26,16 @@ public class EnemyCar : MonoBehaviour
     private BrakeLights _brakeLights;
     private bool _shouldBrake;
 
-    private EngineMoveCoreBase _engineMoveCore;
+    private SteeringControllerBase _engineMoveCore;
 
-    private Coroutine _sendSpeedCoroutine;
+    private Coroutine _collectTelemetryRoutine;
 
     private float _pointClosely = 0;
     private float _distanceToTrace = 0;
 
     private float _timer = 0;
 
-    private List<double> _times = new List<double>();
-    private List<double> _speeds = new List<double>();
-
+    private VehicleTelemetry _telemetry;
 
     private Vector3 _navmeshTargetPosition;
     private RouteNavigator _routeNavigator;
@@ -55,6 +56,7 @@ public class EnemyCar : MonoBehaviour
         _transmission = gameObject.GetComponentInChildren<Transmission>();
         _body.centerOfMass += new Vector3(0, -0.8f, 0);
 
+        _telemetry = new VehicleTelemetry();
         _routeNavigator = new RouteNavigator(_points, transform.position, transform.forward);
         
     }
@@ -64,45 +66,37 @@ public class EnemyCar : MonoBehaviour
         _speedUI = UIScreenRepository.GetScreen<SpeedUIScreen>();
         _timeUI = UIScreenRepository.GetScreen<TimeUIScreen>();
 
-        _engineMoveCore = new EngineWayPoint2tMoveCore(FrameworkStorage.GlobalData.LineFactory);
-      //  _engineMoveCore = new EnginePurePursuitMoveCore(FrameworkStorage.GlobalData.LineFactory);
-        //_engineMoveCore = new EngineWayPointtMoveCore(FrameworkStorage.GlobalData.LineFactory);
-
+        _engineMoveCore = SteeringControllerFactory.Create(_steeringAlgorithm, FrameworkStorage.GlobalData.LineFactory, _points);
 
         StartSendingSpeed();
-        _navmeshAgent.isStopped = true;
-
-
-        //  _jsonInjectionExample.UpdateSpeed((_body.velocity.magnitude * 5).ToInt());
+        //_navmeshAgent.isStopped = true;
     }
 
 
-    private IEnumerator SendSpeedEveryTwoSeconds()
+    private IEnumerator CollectTelemetryRoutine()
     {
-        while (true) // Бесконечный цикл, который будет выполняться до остановки
+        while (true) 
         {
-            // Получаем скорость (мagnitude вектора скорости)
-            int speed = ((_body.velocity.magnitude * 5).ToInt()); // Приведение значения к int
-            _jsonInjectionExample.UpdateSpeed(speed); // Отправляем скорость
-
+      
+            int speed = ((_body.velocity.magnitude * 5).ToInt());
+            _jsonInjectionExample.UpdateSpeed(speed);
             _jsonInjectionExample2.UpdateSpeed(_pointClosely.ToInt());
 
             _pointClosely += _distanceToTrace;
-            _times.Add(_timer);
-            _speeds.Add((_body.velocity.magnitude * 5));
+            _telemetry.Record(_timer, _body.velocity.magnitude * 5);
 
-            yield return new WaitForSeconds(0.1f); // Ждём 2 секунды перед следующим отправлением
+            yield return new WaitForSeconds(0.1f);
         }
     }
 
     private void StartSendingSpeed()
     {
-        if (_sendSpeedCoroutine != null)
+        if (_collectTelemetryRoutine != null)
         {
-            StopCoroutine(_sendSpeedCoroutine);
+            StopCoroutine(_collectTelemetryRoutine);
         }
 
-        _sendSpeedCoroutine = StartCoroutine(SendSpeedEveryTwoSeconds());
+        _collectTelemetryRoutine = StartCoroutine(CollectTelemetryRoutine());
     }
 
     public void Update()
@@ -121,17 +115,14 @@ public class EnemyCar : MonoBehaviour
 
         if (_routeNavigator.CurrentTargetIndex == 34)
         {
-            StopCoroutine(_sendSpeedCoroutine);
+            StopCoroutine(_collectTelemetryRoutine);
             _transmission.OnBrakingActiveChange(true, 100);
             _engine.OnMotorPullingChange(false);
-            
-            Debug.Log("METRIC: "+ MotionMetrics.CalculateRmsAcceleration(_times,_speeds));
+            Debug.Log("METRIC: " + _telemetry.CalculateRmsAcceleration());
             return;
         }
 
         _timer += Time.deltaTime;
-
-        //  _jsonInjectionExample.UpdateSpeed((_body.velocity.magnitude).ToInt());
 
         Vector3 closestPoint = _points[_routeNavigator.CurrentTargetIndex];
 
@@ -166,12 +157,7 @@ public class EnemyCar : MonoBehaviour
                     _body.velocity.magnitude
             };
 
-        //  float angleToTarget = _engineWayPoint2TMoveCore.GetAngleToTurn(transform, _targetPointIndex, _points, _body.velocity.magnitude);
-        //_engineMoveCore.GetAngleToTurn(transform, closestPoint);
-
         float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, context);
-
-      //  float angleToTarget = _engineMoveCore.GetAngleToTurn(transform, _navmeshTargetPosition);
 
         float currentSpeed = _body.velocity.magnitude;
 
@@ -241,16 +227,16 @@ public class EnemyCar : MonoBehaviour
 }
 
 
-public abstract class EngineMoveCoreBase
+public abstract class SteeringControllerBase
 {
     public abstract float GetAngleToTurn(Transform carTransform, NavigationContext context);
 }
 
-public class EnginePurePursuitMoveCore: EngineMoveCoreBase
+public class PurePursuitController: SteeringControllerBase
 {
     private  LineFactory _lineFactory;
 
-    public EnginePurePursuitMoveCore(LineFactory lineFactory)
+    public PurePursuitController(LineFactory lineFactory)
     {
         _lineFactory = lineFactory;
     }
@@ -275,12 +261,12 @@ public class EnginePurePursuitMoveCore: EngineMoveCoreBase
     }
 }
 
-public class EngineWayPointtMoveCore : EngineMoveCoreBase
+public class DirectWaypointController : SteeringControllerBase
 {
     private LineFactory _lineFactory;
 
 
-    public EngineWayPointtMoveCore(LineFactory lineFactory)
+    public DirectWaypointController(LineFactory lineFactory)
     {
         _lineFactory = lineFactory;
     }
@@ -298,7 +284,7 @@ public class EngineWayPointtMoveCore : EngineMoveCoreBase
     }
 }
 
-public class EngineWayPoint2tMoveCore : EngineMoveCoreBase
+public class StanleyController : SteeringControllerBase
 {
     private readonly LineFactory _lineFactory;
 
@@ -307,7 +293,7 @@ public class EngineWayPoint2tMoveCore : EngineMoveCoreBase
     private const float SpeedFactor = 6.7f;
     private const float MinSpeed = 0.1f;
 
-    public EngineWayPoint2tMoveCore(LineFactory lineFactory)
+    public StanleyController(LineFactory lineFactory)
     {
         _lineFactory = lineFactory;
     }
@@ -425,5 +411,62 @@ public class EngineWayPoint2tMoveCore : EngineMoveCoreBase
             nextPoint + Vector3.up * 0.1f,
             Color.red,
             100);
+    }
+}
+
+public enum SteeringAlgorithm
+{
+    DirectWaypoint,
+    PurePursuit,
+    Stanley
+}
+
+
+public static class SteeringControllerFactory
+{
+    public static SteeringControllerBase Create(
+        SteeringAlgorithm algorithm,
+        LineFactory lineFactory,
+        List<Vector3> points)
+    {
+        switch (algorithm)
+        {
+            case SteeringAlgorithm.DirectWaypoint:
+                return new DirectWaypointController(lineFactory);
+
+            case SteeringAlgorithm.PurePursuit:
+                return new PurePursuitController(lineFactory);
+
+            case SteeringAlgorithm.Stanley:
+                return new StanleyController(lineFactory);
+
+            default:
+                return new DirectWaypointController(lineFactory);
+        }
+    }
+}
+
+public class VehicleTelemetry
+{
+    private readonly List<double> _times = new();
+    private readonly List<double> _speeds = new();
+
+    public void Record(float time, float speed)
+    {
+        _times.Add(time);
+        _speeds.Add(speed);
+    }
+
+    public double CalculateRmsAcceleration()
+    {
+        return MotionMetrics.CalculateRmsAcceleration(
+            _times,
+            _speeds);
+    }
+
+    public void Clear()
+    {
+        _times.Clear();
+        _speeds.Clear();
     }
 }
