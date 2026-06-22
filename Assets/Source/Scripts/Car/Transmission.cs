@@ -12,9 +12,9 @@ public class Transmission : MonoBehaviour
 
     private Dictionary<WheelsQuadPositionId, Wheel> _wheels;
 
-    private float _wheelRotationTimer = 0;
     private float _eversionAngle = 0;
     private float _eversionRealAngle = 0;
+    private const float SteerLerpSpeed = 6f;
 
     private CarDirection _carDirection = CarDirection.Forward;
 
@@ -69,12 +69,9 @@ public class Transmission : MonoBehaviour
 
     private void Update()
     {
-        if (_wheelRotationTimer<1)
-        {
-            _wheelRotationTimer += Time.deltaTime;
-            _eversionRealAngle = Mathf.Lerp(_eversionRealAngle, _eversionAngle, _wheelRotationTimer);
-            RotateFrontWheels();
-        }
+        _eversionRealAngle = Mathf.Lerp(_eversionRealAngle, _eversionAngle, Time.deltaTime * SteerLerpSpeed);
+        RotateFrontWheels();
+
         UpdateWheelVisualization(_wheels[WheelsQuadPositionId.FrontRight].WheelCollider, _wheels[WheelsQuadPositionId.FrontRight].Skin, false);
         UpdateWheelVisualization(_wheels[WheelsQuadPositionId.FrontLeft].WheelCollider, _wheels[WheelsQuadPositionId.FrontLeft].Skin, true);
         UpdateWheelVisualization(_wheels[WheelsQuadPositionId.RearRight].WheelCollider, _wheels[WheelsQuadPositionId.RearRight].Skin, false);
@@ -83,7 +80,6 @@ public class Transmission : MonoBehaviour
 
     private void ChangeTransmissionAngle()
     {
-        _wheelRotationTimer = 0;
         switch (_state)
         {
             case TransmissionAngleState.Forward:
@@ -163,10 +159,8 @@ public class Transmission : MonoBehaviour
 
     public void OffMoment()
     {
-        foreach (var wheel in _wheels) {
+        foreach (var wheel in _wheels)
             wheel.Value.WheelCollider.motorTorque = 0;
-            wheel.Value.WheelCollider.brakeTorque = 100;
-        }
     }
 
     public void ResetBrakingState()
@@ -215,10 +209,7 @@ public class Transmission : MonoBehaviour
 
     public void OnBrakingActiveChange(bool isBraking, float procent)
     {
-        if (_isBraking != isBraking)
-        {
-            _isBraking = isBraking;
-            Braking(procent);
-        }
+        _isBraking = isBraking;
+        Braking(procent);
     }
 }
