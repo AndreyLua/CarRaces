@@ -96,7 +96,7 @@ public class Car : MonoBehaviour, ITriggerable
         {
          //   Debug.DrawLine(transform.position, _points[FindClosestPointAhead(transform.position, transform.forward)], Color.red);
 
-            Debug.DrawLine(transform.position, transform.position+ directionToTarget*100, Color.red);
+            //Debug.DrawLine(transform.position, transform.position+ directionToTarget*100, Color.red);
         }
         float angle = Mathf.Atan2(directionToTarget.z, directionToTarget.x) * Mathf.Rad2Deg ;
 
@@ -109,8 +109,8 @@ public class Car : MonoBehaviour, ITriggerable
 
         _targetArrowUIScreen.SetTargetAngle(angle);
         Move();
-     //   _speedUI.SetSpeed((_body.velocity.magnitude*5).ToInt());
-      //  _speedUI.SetGear(_engine.CurrentGear);
+        _speedUI.SetSpeed((_body.velocity.magnitude*5).ToInt());
+        _speedUI.SetGear(_engine.CurrentGear);
     }
 
     private void Move()

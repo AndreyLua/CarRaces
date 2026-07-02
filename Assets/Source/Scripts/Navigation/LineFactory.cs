@@ -20,7 +20,7 @@ public class LineFactory : MonoBehaviour
         {
             _meshGenPoints.Add(a.position+Vector3.up * 0.1f);
         }
-        CreateCurvedLineWithBorder(_meshGenPoints,4f, 900, true);
+        //CreateCurvedLineWithBorder(_meshGenPoints,4f, 900, true);
     }
 
     public void CreateCurvedLineWithBorder(List<Vector3> controlPoints, float borderDistance, int segments = 40, bool isStatic = false)

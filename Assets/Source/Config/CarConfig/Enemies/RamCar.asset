@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 0}
-  m_Name: CamaroWheelBase
+  m_Name: RamCar
   m_EditorClassIdentifier: Assembly-CSharp::WheelbaseConfig
-  FrontWheel: {fileID: 3489983171113569543, guid: 7deed00d13032ed4e9a12ace7888df11, type: 3}
-  RearWheel: {fileID: 3489983171113569543, guid: 7deed00d13032ed4e9a12ace7888df11, type: 3}
-  Width: 1.4
-  Length: 3
+  FrontWheel: {fileID: 3489983171113569543, guid: d145c3e884cd8bb42b96de1ba26d7597, type: 3}
+  RearWheel: {fileID: 3489983171113569543, guid: d145c3e884cd8bb42b96de1ba26d7597, type: 3}
+  Width: 1.6
+  Length: 4

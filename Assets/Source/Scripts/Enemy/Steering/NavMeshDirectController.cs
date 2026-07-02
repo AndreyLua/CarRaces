@@ -53,7 +53,7 @@ public class NavMeshDirectController : SteeringControllerBase
         Vector3 target    = _corners[_cornerIndex];
         Vector3 direction = (target - carTransform.position).normalized;
 
-        DrawDebugPath(carTransform.position, target);
+        //DrawDebugPath(carTransform.position, target);
 
         return Vector3.SignedAngle(carTransform.forward, direction, Vector3.up);
     }

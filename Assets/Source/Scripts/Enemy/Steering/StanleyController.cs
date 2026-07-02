@@ -16,7 +16,7 @@ public class StanleyController : SteeringControllerBase
 
     public override float GetAngleToTurn(Transform carTransform, NavigationContext context)
     {
-        _lineFactory.ClearLines();
+        //_lineFactory.ClearLines();
 
         Vector3 currentPoint  = context.TargetPoint;
         Vector3 nextPoint     = context.NextTargetPoint;
@@ -25,7 +25,7 @@ public class StanleyController : SteeringControllerBase
         float headingError    = CalculateHeadingError(carTransform, currentPoint);
         float crossTrackError = CalculateCrossTrackError(carTransform.position, closestPoint, currentPoint, nextPoint);
 
-        DrawDebug(carTransform.position, closestPoint, currentPoint, nextPoint);
+        //DrawDebug(carTransform.position, closestPoint, currentPoint, nextPoint);
 
         return CalculateSteering(headingError, crossTrackError, context.CurrentSpeed);
     }

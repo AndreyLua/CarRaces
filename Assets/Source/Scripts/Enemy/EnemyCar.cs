@@ -106,8 +106,8 @@ public class EnemyCar : MonoBehaviour
 
         UpdateBraking(angleToTarget, currentSpeed);
         UpdateDriving(angleToTarget, currentSpeed);
-        UpdateDebugLine();
-        UpdateUI();
+        //UpdateDebugLine();
+        //UpdateUI();
     }
 
     private void OnFinish()

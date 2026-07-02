@@ -12,6 +12,7 @@ public class TimeUIScreen : UIScreen
 
     public void SeTime(float time)
     {
+        if (_timeText)
         _timeText.text = time.ToString("F1") +"s";
     }
 }

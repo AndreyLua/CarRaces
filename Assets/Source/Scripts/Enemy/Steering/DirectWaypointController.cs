@@ -11,10 +11,10 @@ public class DirectWaypointController : SteeringControllerBase
 
     public override float GetAngleToTurn(Transform carTransform, NavigationContext context)
     {
-        _lineFactory.ClearLines();
+        //_lineFactory.ClearLines();
 
         Vector3 direction = (context.TargetPoint - carTransform.position).normalized;
-        _lineFactory.CreateLine(carTransform.position, context.TargetPoint, Color.blue);
+        //_lineFactory.CreateLine(carTransform.position, context.TargetPoint, Color.blue);
 
         return Vector3.SignedAngle(carTransform.forward, direction, Vector3.up);
     }
